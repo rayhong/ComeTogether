@@ -1,13 +1,15 @@
+// js for LOGIN_INIT.html
+// Present an initial screen that users will see when visiting ComeTogether
+
 $(document).ready(function(){
-	//Load the news file
 	$("#canvas").css("opacity",0);
+	//Load html and add events
 	$.ajax({
 		url: "html/LOGIN_INIT.html",
 		dataType: "html",
 		async: true,
 		success: function (data){
-			//If news file loaded succesfully
-			//Step 1. update UI
+			//Step 1. update UI at #canvas
 			$("#canvas").empty();
 			$("#canvas").append(data);
 			setTimeout(function(){
@@ -18,19 +20,21 @@ $(document).ready(function(){
 				$(".credit").css("top", (height_window - 40 - height_cont) + "px");
 				//Step 3. add event handler
 				$(document).on("click", ".btn", function(event){
-					//screen will be updated. Off events.
+					//Once the next screen is loaded, off events.
 					offEvents_login_init();
 					loadScreen_login_init($(this).attr("id"));
 				})
-				$("#canvas").animate({"opacity":1}, 500);
-			}, 300);
+
+				$("#canvas").animate({"opacity":1}, time_scr_fadein);
+			}, time_scr_loadbuffer);
 		},
 		error: function (request, error){console.log(error)}
 	});
 });
 
+// Function: Loading different screens from LOGIN_INIT.html
 function loadScreen_login_init(screen_id){
-	$("#canvas").animate({"opacity":0}, 300, function(){
+	$("#canvas").animate({"opacity":0}, time_scr_fadeout, function(){
 		$.ajax({
 			url: "js/" + screen_id + ".js",
 			dataType: "script",
@@ -38,9 +42,10 @@ function loadScreen_login_init(screen_id){
 			success: function (data){},
 			error: function (request, error){console.log(error)}
 		});		
-	})
+	});
 }
 
+// Function: Off events, triggered once loading different screens
 function offEvents_login_init(){
 	$(document).off("click", ".btn");
 }

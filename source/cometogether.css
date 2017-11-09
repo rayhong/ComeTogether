@@ -99,6 +99,10 @@ body{
 	font-size:16px;
 }
 
+.message{
+	font-size: 18px;
+}
+
 /*Screen LOGIN_INIT*/
 #SCR_LOGIN_INIT{
 	position: relative;
@@ -177,4 +181,8 @@ body{
 
 #SCR_LOGIN_SIGNIN .buttons{
 	margin-top: 20px;
+}
+
+#login_forgot{
+	font-size: 18px;
 }
