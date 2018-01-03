@@ -1,5 +1,4 @@
 // necessary packages
-var jimp = require('jimp');
 var multer = require('multer');
 var path = require('path');
 var fs = require('fs');
@@ -29,22 +28,9 @@ module.exports = function(app, con){
 	app.post('/uploadimg', function(req, res){
 		upload(req, res, function(err){
 			if(err) throw err;
-			jimp.read(__dirname + "/../temp/" + req.file.filename).then(function(image){
-				image.resize(120,120, function(err, image){
-					image.write(__dirname + "/../temp/" + req.file.filename, function(err, image){
-						res.send(JSON.stringify({name: req.file.filename}));
-					});
-				});
-			});
+			res.send(JSON.stringify({name: req.file.filename}));
 		})
 	})
-
-	// delete temporary files
-	app.post('/deleteimg/:filename', function(req, res){
-		fs.unlink(__dirname + "/../temp/" + req.params.filename, function(err){
-			if(err) throw err;
-		});
-	});
 
 	// post handler to store registration information in database and permanently storing profile image
 	app.post('/register', function(req, res){
