@@ -22,6 +22,15 @@ $.ajax({
 			//T.B.D: develop ID PW checking module.
 			//Check inputs. Chnage class of the Sign up btn (#DASHBOARD) to "btn" if everything is okay.)
 			//3-1. click a cancel button
+
+			// verifying fields are filled and if they are make login button clickable
+			$("#input_id").keyup(function(){
+				verify_filled();
+			})
+			$("#input_pw").keyup(function(){
+				verify_filled();
+			})
+
 			$(document).on("click", "#LOGIN_INIT", function(event){
 				//screen will be updated. Off events.
 				offEvents_login_signin();
@@ -31,10 +40,8 @@ $.ajax({
 			$(document).on("click", "#DASHBOARD", function(event){
 				//screen will be updated. Off events.
 				if($(this).attr("class") == "btn"){
-					offEvents_login_signin();
-					loadScreen_login_signin($(this).attr("id"));		
-					//T.B.D.: finish SIGN IN call - check if the input user enter correct.
-					//Update message if it is not correct. e.g., no e-mail record found / your password is not matching with our record
+					// lets login if correct info, else display message in console
+					verify_info();
 				}
 				else{console.log("not ready for registration.");}
 			})			
@@ -62,4 +69,37 @@ function loadScreen_login_signin(screen_id){
 function offEvents_login_signin(){
 	$(document).off("click", "#LOGIN_INIT");
 	$(document).off("click", "#DASHBOARD");
+}
+
+// verifies fields are filled and if they are change button
+function verify_filled(){
+	if($("#input_id").val() != "" && $("#input_pw").val() != "")
+		$("#DASHBOARD").attr("class", "btn");
+	else if($("#DASHBOARD").attr('class') == "btn")
+		$("#DASHBOARD").attr("class", "btn_dis");
+}
+
+// verifies user information through the database
+function verify_info(){
+	var data = {"id": $("#input_id").val(), "pw": $("#input_pw").val()};
+	$.ajax({
+		type: 'POST',
+		url: '/login',
+		data: JSON.stringify(data),
+		contentType: 'application/json',
+		dataType: 'json',
+		success: function(data){
+			if(data.success){
+				console.log("login successful");
+				// load the next screen
+				offEvents_login_signin();
+				loadScreen_login_signin("DASHBOARD");	
+			}else{
+				if(data.issue) // data.issue = true if email is the problem
+					console.log("no such email found");
+				else
+					console.log("password does not match");
+			}
+		}
+	})
 }

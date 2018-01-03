@@ -26,8 +26,55 @@ $.ajax({
 			//T.B.D. Developing checking module 
 			//Check inputs. Chnage class of the Sign up btn (#LOGIN_SIGNUP_DONE) to "btn" if everything is okay.)
 			//3-2. Upload
+
+			// verify that all required fields are filled
+			$("#input_email").keyup(function(){
+				verify_required();
+			})
+			$("#input_name").keyup(function(){
+				verify_required();
+			})
+			$("#input_pw").keyup(function(){
+				verify_required();
+			})
+			$("#input_pwconf").keyup(function(){
+				verify_required();
+			})
+
+
+			// img uploading and displaying handler
+			$("#img_upload").change(function(){
+				var old_filename = $("#img_upload").data("filename");
+				var formData = new FormData(); // problem with FormData is that not supported by all browsers
+				formData.append('file', this.files[0]);
+				if(this.files[0]){
+					$.ajax({
+						url: "/uploadimg",
+						data: formData,
+						processData: false,
+						contentType: false,
+						dataType: 'json',
+						type: 'POST',
+						success: function(data){
+							$("#profile_pic").attr('src', '/temp/' + data.name);
+							$("#img_upload").data("filename", data.name); // to be used to delete temp file once registration done
+							verify_required();
+							
+							// if a previous temp file exists, delete it
+							if(old_filename != ""){
+								$.ajax({
+									type: 'POST',
+									url: '/deleteimg/' + old_filename
+								})
+							}
+						}
+					})
+				}
+			})
+
 			$(document).on("click", "#PROFILE_UPLOAD", function(){
 				console.log("image upload handling");
+				$("#img_upload").trigger('click'); // triger click in input to upload file
 			});
 			//3-3. Register
 			$(document).on("click", "#LOGIN_SIGNUP_DONE", function(){
@@ -35,6 +82,9 @@ $.ajax({
 					offEvents_login_signup();
 					loadScreen_login_signup($(this).attr("id"));
 					//T.B.D.: finish SIGN up call - check if the input user enter correct.
+
+					// ajax post request to register
+					post_register();
 				}
 				else{console.log("not ready for registration.");}
 			});
@@ -43,6 +93,14 @@ $.ajax({
 				//screen will be updated. Off events.
 				offEvents_login_signup();
 				loadScreen_login_signup($(this).attr("id"));
+
+				// delete temp img file
+				if($("#img_upload").data("filename") != ""){
+					$.ajax({
+						type: 'POST',
+						url: '/deleteimg/' + $("#img_upload").data("filename")
+					})
+				}
 			});
 			$("#canvas").animate({"opacity":1}, time_scr_fadein);
 		}, time_scr_loadbuffer);
@@ -69,4 +127,33 @@ function offEvents_login_signup(){
 	$(document).off("click", "#PROFILE_UPLOAD");
 	$(document).off("click", "#LOGIN_SIGNUP_DONE");
 	$(document).off("click", "#LOGIN_INIT");
+}
+
+// verify that all required fields are filled
+// and change register button if they are
+function verify_required(){
+	if($("input_email").val() != "" && $("#input_name").val() != "" && 
+		$("#input_pw").val() != "" && $("#input_pwconf").val() != "" && $("#img_upload").data("filename") != "")
+		$("#LOGIN_SIGNUP_DONE").attr("class", "btn");
+	else if($("#LOGIN_SIGNUP_DONE").attr('class') == "btn")
+		$("#LOGIN_SIGNUP_DONE").attr("class", "btn_dis");
+}
+
+// ajax post request to register
+function post_register(){
+	// send filename so server can store it in profile_imgs and remove temp
+	var data = {"email": $("#input_email").val(), "name": $("#input_name").val(), 
+				"password": $("#input_pw").val(), "homeaddr": $("#input_homeadd").val(),
+				"officeaddr": $("#input_officeadd").val(), "filename": $("#img_upload").data("filename")};
+	$.ajax({
+		type: 'POST',
+		url: "/register",
+		data: JSON.stringify(data),
+		contentType: 'application/json',
+		dataType: 'json',
+		success: function(data){
+			// do something after registration success
+			console.log("successfully registered " + $("#input_name").val());
+		}
+	});
 }

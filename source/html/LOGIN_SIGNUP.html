@@ -26,24 +26,26 @@
 		<div class="login_heading"> YOUR PROFILE 
 			<div id="login_profile">
 				<div id="login_profile_left">
-					<img src="img/profile_default.png"/>
+					<img src="img/profile_default.png" id="profile_pic"/>
 				</div>
 				<div id="login_profile_right"> Your friends will rely on your profile image to identify you while searching destinations together. We encourage you to use a picture of yourself that shows you clearly.</div>
 			</div>
+			<!-- hidden input to upload files -->
+			<input type="file" id="img_upload" style="display:none" data-filename=""/>
 			<span class="btn" id="PROFILE_UPLOAD" style="margin-left:0px;">
 				<img src=""/> UPLOAD
 			</span><span>*</span>
 		</div>
 		<div class="login_heading"> ADDITIONAL INFORMATION
 			<div>
-				<span><input type="text" id="input_email" class="input_text" placeholder="Your home address"/></span>
+				<span><input type="text" id="input_homeadd" class="input_text" placeholder="Your home address"/></span>
 			</div>
 			<div>
 				<input id="check_homeadd" type="checkbox" name="homeadd"/>
 				<label class="check_txt" for="check_homeadd">Do not want to specify</label>
 			</div>
 			<div>
-				<span><input type="text" id="input_email" class="input_text" placeholder="Your office address"/></span>
+				<span><input type="text" id="input_officeadd" class="input_text" placeholder="Your office address"/></span>
 			</div>
 			<div>
 				<input id="check_officeadd" type="checkbox" name="officeadd"/>
