@@ -36,33 +36,37 @@ $.ajax({
 						data: {data: data.groups},
 						dataType: "json",
 						success: function(groupList){
-							$(".group_list").hide()
-							for(i = 0; i < groupList.length; i++){
-								var groupData = groupList[i]
-								var images = ''
-								for(j = 0; groupData.members && j < groupData.members.length ; j++){
-									images += `<img src="profile_imgs/${groupData.members[j].user_img_filename}"/>`;
+							if(groupList){
+								$(".group_list").hide()
+								for(i = 0; i < groupList.length; i++){
+									var groupData = groupList[i]
+									var images = ''
+									for(j = 0; groupData.members && j < groupData.members.length ; j++){
+										images += `<img src="profile_imgs/${groupData.members[j].user_img_filename}"/>`;
+									}
+									var html = `<div class="group_entry">
+													<h1>
+														<span class="group_title">${groupData.g_title}</span> on ${groupData.g_date.slice(0,10)}
+													</h1>
+													<p>
+														<span class="num_msgs"> (not imple) new messages </span>in this group
+													</p>
+													<p>
+														${groupData.g_info}
+													</p>
+													<p>
+														${images}
+													</p>
+													<span class="btn"> PARTICIPATE </span>
+													<span class="btn"> LEAVE THIS GROUP </span>
+												</div>`
+									$(".group_list").append(html);
 								}
-								var html = `<div class="group_entry">
-												<h1>
-													<span class="group_title">${groupData.g_title}</span> on ${groupData.g_date.slice(0,10)}
-												</h1>
-												<p>
-													<span class="num_msgs"> (not imple) new messages </span>in this group
-												</p>
-												<p>
-													${groupData.g_info}
-												</p>
-												<p>
-													${images}
-												</p>
-												<span class="btn"> PARTICIPATE </span>
-												<span class="btn"> LEAVE THIS GROUP </span>
-											</div>`
-								$(".group_list").append(html);
+								$(".group_list").fadeIn();
+								$("#bot").height($(document).height()-height_topbar-$("#top-bar").outerHeight()-height_top);
+							}else{
+								$(".group_list").append(`<p style="color: #aaa; font-size: 20px; font-weight: lighter"> You have no events to show </p>`)
 							}
-							$(".group_list").fadeIn();
-							$("#bot").height($(document).height()-height_topbar-$("#top-bar").outerHeight()-height_top);
 						}
 					})
 				}

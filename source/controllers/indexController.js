@@ -88,16 +88,11 @@ module.exports = function(app, con){
 						})
 
 						// create the sql query string
-						var sql = "INSERT INTO users (user_id, user_pw, user_name, user_home_address, user_office_address, user_groups, user_img_filename) VALUES (";
-						if(data.homeaddr == "" && data.officeaddr == "")
-							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, NULL, NULL, `;
-						else if(data.homeaddr == "")
-							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, NULL, ${con.escape(data.officeaddr)}, `;
-						else if (data.officeaddr == "")
-							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, ${con.escape(data.homeaddr)}, NULL, `;
-						else
-							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, ${con.escape(data.homeaddr)}, ${con.escape(data.officeaddr)}, `;
-						sql += "JSON_OBJECT('type', 'user_groups', 'data', JSON_ARRAY()), " + con.escape(img_filename) + ")";
+						var sql = `INSERT INTO users (user_id, user_pw, user_name, user_home_address, user_office_address, user_groups, user_img_filename) 
+									VALUES (${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, 
+									${data.homeaddr == "" ? 'NULL' : con.escape(data.homeaddr)}, 
+									${data.officeaddr == "" ? 'NULL' : con.escape(data.officeaddr)}, 
+									JSON_OBJECT('type', 'user_groups', 'data', JSON_ARRAY()), ${con.escape(img_filename)})`;
 
 						// insert new user into the table
 						con.query(sql, function(err, result){
@@ -168,18 +163,21 @@ module.exports = function(app, con){
 	// returns information about the group/event specified in the url query
 	app.get('/get_group_info', function(req, res){
 		var groups = req.query.data;
-		var stringList = "("
-		for(i = 0; i < groups.length; i++){
-			if(i != 0)
-				stringList += ", "
-			stringList += con.escape(groups[i])
-		}
-		stringList += ")"
+		if(groups){
+			var stringList = "("
+			for(i = 0; i < groups.length; i++){
+				if(i != 0)
+					stringList += ", "
+				stringList += con.escape(groups[i])
+			}
+			stringList += ")"
 
-		var sql = `SELECT g_id, g_title, g_date, g_info, g_status FROM groups WHERE g_id IN ${stringList}`
-		con.query(sql, function(err, result){
-			getMembersInfo(result, 0, con, res)
-		})
+			var sql = `SELECT g_id, g_title, g_date, g_info, g_status FROM groups WHERE g_id IN ${stringList}`
+			con.query(sql, function(err, result){
+				getMembersInfo(result, 0, con, res)
+			})
+		}else
+			res.send()
 
 		/*
 		var id = req.query.group_id
@@ -270,8 +268,8 @@ module.exports = function(app, con){
 	// handler for updating user information
 	app.post('/update_info', function(req, res){
 		var data = req.body;
-		var sql = `UPDATE users SET user_name=${con.escape(data.name)}, user_home_address=${con.escape(data.homeadd)}, 
-					user_office_address=${con.escape(data.officeadd)}`
+		var sql = `UPDATE users SET user_name=${con.escape(data.name)}, user_home_address=${data.homeadd == "" ? 'NULL' : con.escape(data.homeadd)}, 
+					user_office_address=${data.officeadd == "" ? 'NULL' : con.escape(data.officeadd)}`
 		var sqlEnd = ` WHERE user_id=${con.escape(req.session.userID)}`;
 
 		// if the profile image was changed

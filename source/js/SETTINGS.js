@@ -42,12 +42,12 @@ $.ajax({
 					$("#input_pw").val("placeholder").css("color", "#000");
 					$("#input_pwconf").val("placeholder").css("color", "#000");
 					$("#profile_pic").attr("src", "/profile_imgs/" + data.filename)
-					if(data.homeadd != ""){
+					if(data.homeadd != null){
 						$("#input_homeadd").val(data.homeadd).css("color", "#000");
 						$("#input_homeadd").prop("readonly", false)
 						$("#check_homeadd").attr("checked", false)
 					}
-					if(data.officeadd != ""){
+					if(data.officeadd != null){
 						$("#input_officeadd").val(data.officeadd).css("color", "#000");
 						$("#input_officeadd").prop("readonly", false)
 						$("#check_officeadd").attr("checked", false)
@@ -58,33 +58,37 @@ $.ajax({
 						data: {data: data.groups},
 						dataType: 'json',
 						success: function(groupList){
-							$("#url_list").hide()
-							for(i = 0; i < groupList.length; i++){
-								var groupData = groupList[i]
-								var html = `<div>
-												<span class="label">${groupData.g_title} <span style="font-weight:lighter">on</span> ${groupData.g_date.slice(0,10)}</span>
-											</div>
-											<div>
-												<span><input type="text" id="group${groupData.g_id}" class="input_text" value="https://127.0.0.1:8000/?group_id=${groupData.g_id}" readonly/></span><!--
-												--><span class="btn copy_url" data-g_id="${groupData.g_id}">COPY URL</span>
-											</div>`
-								$("#url_list").append(html)
-								$(".copy_url").click(function(){
-									var $temp = $("<input>");
-									$("body").append($temp);
-									$temp.val($("#group" + $(this).data("g_id")).val()).select();
-									document.execCommand("copy");
-									$temp.remove()
-								})
+							if(groupList){
+								$("#url_list").hide()
+								for(i = 0; i < groupList.length; i++){
+									var groupData = groupList[i]
+									var html = `<div>
+													<span class="label">${groupData.g_title} <span style="font-weight:lighter">on</span> ${groupData.g_date.slice(0,10)}</span>
+												</div>
+												<div>
+													<span><input type="text" id="group${groupData.g_id}" class="input_text" value="https://127.0.0.1:8000/?group_id=${groupData.g_id}" readonly/></span><!--
+													--><span class="btn copy_url" data-g_id="${groupData.g_id}">COPY URL</span>
+												</div>`
+									$("#url_list").append(html)
+									$(".copy_url").click(function(){
+										var $temp = $("<input>");
+										$("body").append($temp);
+										$temp.val($("#group" + $(this).data("g_id")).val()).select();
+										document.execCommand("copy");
+										$temp.remove()
+									})
+								}
+								$("#url_list").fadeIn()
+								var height_window = $(window).height();
+								var height_cont_right = $("#SCR_SETTINGS #right").height();
+								var height_cont_left = $("#SCR_SETTINGS #left").height();
+								var height_cont = height_cont_right;
+								$("#SCR_SETTINGS #left").css("top", (height_cont_right-height_cont_left)/2);
+								$("#SCR_SETTINGS").css("top", (height_window - height_cont)/2 - 30 + "px");
+								$(".credit").css("top", (height_window - 40) + "px");
+							}else{
+								$("#url_list").append(`<p style="color: #fff; font-size: 16px; font-weight: lighter"> You have no event links </p>`)
 							}
-							$("#url_list").fadeIn()
-							var height_window = $(window).height();
-							var height_cont_right = $("#SCR_SETTINGS #right").height();
-							var height_cont_left = $("#SCR_SETTINGS #left").height();
-							var height_cont = height_cont_right;
-							$("#SCR_SETTINGS #left").css("top", (height_cont_right-height_cont_left)/2);
-							$("#SCR_SETTINGS").css("top", (height_window - height_cont)/2 - 30 + "px");
-							$(".credit").css("top", (height_window - 40) + "px");
 						}
 					})
 				}
@@ -316,6 +320,7 @@ function verify_required(){
 // updates user information 
 // by first uploading the image (if it was changed) and then posting the other information
 function update(){
+	$("#update").attr("class", "btn_dis")
 	if($("#img_upload").data("changed")){
 		var formData = new FormData();
 		formData.append('file', $("#img_upload")[0].files[0]);
@@ -342,9 +347,9 @@ function update_info(filename){
 				officeadd: $("#input_officeadd").val(), filename: filename};
 
 	if($("#check_homeadd").is(":checked"))
-		data.homeaddr = "";
+		data.homeadd = "";
 	if($("#check_officeadd").is(":checked"))
-		data.officeaddr = "";
+		data.officeadd = "";
 	if($("#input_pw").data("changed"))
 		data.pw = $("#input_pw").val();
 
@@ -357,11 +362,20 @@ function update_info(filename){
 		success: function(data){
 			// refreshes the page if updates were carried out successfuly
 			if(data.success){
-				offEvents_settings();
-				loadScreen_settings("SETTINGS")
+				anyChange = false;
+				$("#input_name").data("changed", false);
+				$("#input_pw").data("changed", false).data("verified", false);
+				$("#input_pwconf").data("verified", false);
+				$("#img_upload").data("filled", false).data("changed", false);
+				$("#input_homeadd").data("changed", false);
+				$("#input_officeadd").data("changed", false);
+				$("body").prepend(`<div id="confirm-msg" hidden>Information updated!</div>`)
+				$("#confirm-msg").fadeIn(function(){
+					$(this).delay(500).fadeOut();
+				})
 			}else{
 				// in situation where user messes with the javascript
-				console.log("failed registration")
+				console.log("failed update")
 			}
 		}
 	});
