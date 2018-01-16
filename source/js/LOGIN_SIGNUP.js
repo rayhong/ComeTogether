@@ -122,14 +122,23 @@ $.ajax({
 
 			// img uploading and displaying handler
 			$("#img_upload").change(function(){
-				if(this.files && this.files[0]){
+				// check that the image is valid: is an image and smaller than 10MB
+				if(this.files && this.files[0] && this.files[0].type.split('/')[0] == "image" && this.files[0].size < 10*1000*1000){
 					var reader = new FileReader();
 					reader.onload = function(e){
 						$("#profile_pic").attr("src", e.target.result);
 					}
 					reader.readAsDataURL(this.files[0]);
 					$(this).data("filled", true);
-					$("#check_upload").html("&#10004;")
+					$("#check_img").html("&#10004;").css("color", "#fff")
+					verify_required();
+				}else{
+					$("#profile_pic").attr("src", "");
+					$(this).data("filled", false);
+					if(this.files[0].size >= 10*1000*1000)
+						$("#check_img").html("&#10006; <span style='font-size: 14px; color: #fff'>Image is too big (> 10MB).</span>").css("color", "#c33");
+					else
+						$("#check_img").html("&#10006; <span style='font-size: 14px; color: #fff'>Invalid image format.</span>").css("color", "#c33");
 					verify_required();
 				}
 			})
@@ -227,6 +236,7 @@ function verify_pw(){
 	}else{
 		$("#check_pw").html("&#10006;").css("color", "#c33")
 		$("#pw_err").html("Your password must be 7 characters long and contain at least 1 letter and 1 digit.")
+		$("#input_pwconf").data("verified", valid)
 	}
 	verify_required();
 	return valid;
@@ -242,7 +252,7 @@ function verify_pwconf(){
 		$("#pwconf_err").html("")
 	}else{
 		$("#check_pwconf").html("&#10006;").css("color", "#c33")
-		$("#pwconf_err").html("Passwords do not match")
+		$("#pwconf_err").html("Passwords do not match.")
 	}
 	verify_required();
 }
@@ -272,6 +282,7 @@ function post_register(){
 	if($("#check_officeadd").is(":checked"))
 		data.officeaddr = "";
 
+	$("body").prepend('<div class="modal"></div>')
 	// upload image and then upload data to register
 	$.ajax({
 		type: 'POST',
@@ -291,10 +302,20 @@ function post_register(){
 				success: function(data){
 					// load the next page if registration finished correctly
 					if(data.success){
-						console.log("successfully registered");
 						offEvents_login_signup();
-						loadScreen_login_signup("LOGIN_SIGNUP_DONE");
+						// LOGIN_SIGNUP_DONE
+						$(".modal").append('<div id="popup_msg" class="modal-content"><h2> THANK YOU FOR SIGNING UP! </h2><p> We wish you enjoy using ComeTogether, ' + $("#input_name").val() + '!</p><span class="btn" id="DASHBOARD"> &#10004; PROCEED </span></div>')
+						$("#popup_msg").fadeIn(function(){
+							$(document).on("click", "#DASHBOARD", function(){
+								//screen will be updated. Off events.
+								offEvents_login_signup();
+								$(document).off("click", "#DASHBOARD");
+								$(".modal").remove();
+								loadScreen_login_signup($(this).attr("id"));
+							});
+						});
 					}else{
+						// in situation where user messes with the javascript
 						console.log("failed registration")
 					}
 				}

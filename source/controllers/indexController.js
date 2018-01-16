@@ -21,7 +21,33 @@ module.exports = function(app, con){
 
 	// handlers to serve html files
 	app.get('/', function(req, res){
-		res.sendFile('index.html', {root: __dirname + '/../'});
+		if(req.session.userID){
+			if(req.query.group_id){
+				var groupSql = `UPDATE groups SET g_status=JSON_ARRAY_APPEND(g_status, '$.invited_to', JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'accepted', true)) 
+								WHERE g_id=${con.escape(req.query.group_id)} AND JSON_SEARCH(g_status, 'one', ${con.escape(req.session.userID)}, NULL, '$.invited_to[*].user_id') IS NULL 
+								AND g_status->'$.invited_from' != ${con.escape(req.session.userID)}`
+				con.query(groupSql, function(err, result){
+					if (err)
+						res.sendFile('alt_index.html', {root: __dirname + '/../html'})
+					else{
+						if(result.affectedRows != 0){
+							var userSql = `UPDATE users SET user_groups = JSON_ARRAY_APPEND(user_groups, '$.data', ${con.escape(req.query.group_id)}) 
+											WHERE user_id=${con.escape(req.session.userID)} AND 
+											JSON_SEARCH(user_groups, 'one', ${con.escape(req.query.group_id)}, NULL, '$.data') IS NULL`
+							con.query(userSql, function(err, result){
+								res.sendFile('alt_index.html', {root: __dirname + '/../html'})
+							})
+						}else{
+							res.sendFile('alt_index.html', {root: __dirname + '/../html'})
+						}
+					}
+				})
+			}else{
+				res.sendFile('alt_index.html', {root: __dirname + '/../html'});
+			}
+		}else{
+			res.sendFile('index.html', {root: __dirname + '/../'});
+		}
 	});
 
 	// post handler for uploading images and storing in temp
@@ -52,8 +78,17 @@ module.exports = function(app, con){
 						if (err) throw err;
 						var img_dir = __dirname + "/../temp/" + data.filename;
 
+						var img_filename = "" + Date.now() + data.name[0] + path.extname(img_dir);
+						fs.readFile(img_dir, function(err, img){
+							if (err) throw err;
+							fs.writeFile(__dirname + "/../profile_imgs/" + img_filename, img, function(err){
+								if (err) throw err;
+								fs.unlink(img_dir, function(err){ if (err) throw err; });
+							})
+						})
+
 						// create the sql query string
-						var sql = "INSERT INTO users (user_id, user_pw, user_name, user_home_address, user_office_address, user_groups) VALUES (";
+						var sql = "INSERT INTO users (user_id, user_pw, user_name, user_home_address, user_office_address, user_groups, user_img_filename) VALUES (";
 						if(data.homeaddr == "" && data.officeaddr == "")
 							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, NULL, NULL, `;
 						else if(data.homeaddr == "")
@@ -62,20 +97,16 @@ module.exports = function(app, con){
 							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, ${con.escape(data.homeaddr)}, NULL, `;
 						else
 							sql += `${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, ${con.escape(data.homeaddr)}, ${con.escape(data.officeaddr)}, `;
-						sql += "JSON_OBJECT('type', 'user_groups', 'data', JSON_ARRAY()))"
+						sql += "JSON_OBJECT('type', 'user_groups', 'data', JSON_ARRAY()), " + con.escape(img_filename) + ")";
 
 						// insert new user into the table
 						con.query(sql, function(err, result){
-							if (err) throw err;
-							// copy file from temp to profile_imgs folder, and delete temp file
-							fs.readFile(img_dir, function(err, data){
-								if (err) throw err;
-								fs.writeFile(__dirname + "/../profile_imgs/" + result.insertId + path.extname(img_dir), data, function(err){
-									if (err) throw err;
-									fs.unlink(img_dir, function(err){ if (err) throw err; });
-									res.send(JSON.stringify({success: true}));
-								})
-							})
+							if(err)
+								res.send(JSON.stringify({success: false}))
+							else{
+								req.session.userID = data.email;
+								res.send(JSON.stringify({success: true}));
+							}
 						});
 					})
 				}
@@ -101,7 +132,7 @@ module.exports = function(app, con){
 	app.post('/login', function(req, res){
 		// allows login no matter what inputted if a session exists
 		if(req.session.userID != null){
-			res.send(JSON.stringify({success: true, issue: false}));
+			res.send(JSON.stringify({success: true, issue: false, id: req.session.userID}));
 		}else{
 			var data = req.body;
 			var sql = "SELECT user_id, user_pw FROM users WHERE user_id=" + con.escape(data.id);
@@ -121,25 +152,189 @@ module.exports = function(app, con){
 		}
 	});
 
-/*
-	// post handler for logins: checks that userid exists and if password match
-	// returns a json to user depending on verification outcome
-	app.post('/create', function(req, res){
-		var data = req.body;
-		//var time = new Date();
-		//var timestamp = `${time.getFullYear()}-${time.getMonth()+1}-${time.getDate()} ${time.getHours()}:${time.getMinutes()}:${time.getSeconds()}`
-		var sql = "INSERT INTO groups (g_id, g_date, g_info, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES("
-		sql += `'${data.title}', '${data.date}', '${data.info}', `
-		sql += `JSON_OBJECT('ongoing', true, 'terminated', false, 'invited_from', '${req.session.userID}', 'invited_to', JSON_ARRAY()), `
-		sql += `JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY()), `
-		sql += `JSON_OBJECT('type', 'g_fav', 'data', JSON_ARRAY()), `
-		sql += `JSON_OBJECT('type', 'g_chat_log', 'data', JSON_ARRAY()), `
-		sql += `JSON_OBJECT('type', 'g_ping_log', 'g_id', null, 'data', JSON_ARRAY()), `
-		sql += `JSON_OBJECT('type', 'g_behavior_log', 'g_id', null, 'timestamp', JSON_OBJECT('initiated', ${Date.now()}, 'terminated', null), 'activities', JSON_ARRAY()))`
+
+	// handler for GET requests for user information
+	app.get('/get_user_info', function(req, res){
+		var sql = `SELECT user_id, user_name, user_home_address, user_office_address, user_img_filename, user_groups 
+					FROM users WHERE user_id=${con.escape(req.session.userID)}`
 		con.query(sql, function(err, result){
-			if (err) throw err;
-			res.send(JSON.stringify({title: data.title}));
+			var data = {id: result[0].user_id, name: result[0].user_name, 
+						homeadd: result[0].user_home_address, officeadd: result[0].user_office_address,
+						filename: result[0].user_img_filename, groups: JSON.parse(result[0].user_groups).data}
+			res.send(JSON.stringify(data))
 		})
+	})
+
+	// returns information about the group/event specified in the url query
+	app.get('/get_group_info', function(req, res){
+		var groups = req.query.data;
+		var stringList = "("
+		for(i = 0; i < groups.length; i++){
+			if(i != 0)
+				stringList += ", "
+			stringList += con.escape(groups[i])
+		}
+		stringList += ")"
+
+		var sql = `SELECT g_id, g_title, g_date, g_info, g_status FROM groups WHERE g_id IN ${stringList}`
+		con.query(sql, function(err, result){
+			getMembersInfo(result, 0, con, res)
+		})
+
+		/*
+		var id = req.query.group_id
+		var sql = `SELECT g_id, g_title, g_date, g_info, g_status FROM groups WHERE g_id=${con.escape(id)}`
+		con.query(sql, function(err, result){
+			var data = {id: result[0].g_id, title: result[0].g_title, date: result[0].g_date, note: result[0].g_info};
+			var invitedToList = JSON.parse(result[0].g_status).invited_to;
+			var idList = "(" + con.escape(JSON.parse(result[0].g_status).invited_from);
+			for(j = 0; j < invitedToList.length; j++){
+				if(invitedToList[j].accepted)
+					idList += ", " + con.escape(invitedToList[j].user_id)
+			}
+			idList += ")"
+			var membersSql = `SELECT user_id, user_name, user_img_filename FROM users WHERE user_id IN ${idList}`
+			con.query(membersSql, function(err, result){
+				data.members = result;
+				res.send(JSON.stringify(data))
+			})
+		})
+		*/
+	})
+
+	// post handler for creating and editting groups
+	app.post('/create_group', function(req, res){
+		var data = req.body;
+		// if group creation in progress, edit the group
+		// else create the group
+		if(req.session.g_id){
+			var sql = `UPDATE groups SET g_title=${con.escape(data.title)}, g_date=${con.escape(data.date)}, g_info=${con.escape(data.note)}
+						WHERE g_id=${con.escape(req.session.g_id)}`
+			con.query(sql, function(err, result){
+				if(err)
+					res.send(JSON.stringify({success: false}))
+				else
+					res.send(JSON.stringify({success: true, g_id: req.session.g_id}))
+			})
+		}else{
+			var id = Math.random().toString(36).substring(2, 12).toUpperCase()
+			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_info, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
+					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, ${con.escape(data.note)}, 
+					   JSON_OBJECT('ongoing', true, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
+					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY()), JSON_OBJECT('type', 'g_fav', 'data', JSON_ARRAY()), 
+					   JSON_OBJECT('type', 'g_chat_log', 'data', JSON_ARRAY()), JSON_OBJECT('type', 'g_ping_log', 'g_id', null, 'data', JSON_ARRAY()), 
+					   JSON_OBJECT('type', 'g_behavior_log', 'g_id', null, 'timestamp', JSON_OBJECT('initiated', ${Date.now()}, 'terminated', null), 'activities', JSON_ARRAY()))`
+			con.query(sql, function(err, result){
+				if(err){
+					console.log(err)
+					res.send(JSON.stringify({success: false}))
+				}else{
+					req.session.g_id = id
+					res.send(JSON.stringify({success: true, g_id: id}))
+				}
+			})
+		}
 	});
-*/
+
+	// post handler for group deletion in case user cancels group creation
+	app.post('/delete_group', function(req, res){
+		if(req.session.g_id){
+			var sql = `DELETE FROM groups WHERE g_id=${con.escape(req.session.g_id)}`
+			con.query(sql, function(err, result){
+				delete req.session.g_id;
+				res.send({success: true});
+			})
+		}else{
+			res.send({success: true});
+		}
+	})
+
+	// post handler to solidify group creation (send emails and deletes cookie/session group_id)
+	app.post('/finish_group', function(req, res){
+		var g_id = req.session.g_id;
+		delete req.session.g_id;
+		var userSql = `UPDATE users SET user_groups=JSON_ARRAY_APPEND(user_groups, '$.data', ${con.escape(g_id)}) 
+						WHERE user_id=${con.escape(req.session.userID)}`
+		con.query(userSql, function(err, result){
+			if(err){
+				console.log(err)
+				res.send(JSON.stringify({success: false}))
+			}else{
+				res.send(JSON.stringify({success: true}));
+			}
+		})
+		// [todo] handle the emails and emailing
+	})
+
+
+	// handler for updating user information
+	app.post('/update_info', function(req, res){
+		var data = req.body;
+		var sql = `UPDATE users SET user_name=${con.escape(data.name)}, user_home_address=${con.escape(data.homeadd)}, 
+					user_office_address=${con.escape(data.officeadd)}`
+		var sqlEnd = ` WHERE user_id=${con.escape(req.session.userID)}`;
+
+		// if the profile image was changed
+		if(data.filename){
+			var img_dir = __dirname + "/../temp/" + data.filename;
+
+			// move img file from temp to profile_imgs folder with new name
+			var img_filename = "" + Date.now() + data.name[0] + path.extname(img_dir);
+			fs.readFile(img_dir, function(err, img){
+				if (err) throw err;
+				fs.writeFile(__dirname + "/../profile_imgs/" + img_filename, img, function(err){
+					if (err) throw err;
+					fs.unlink(img_dir, function(err){ if (err) console.log(err) });
+				})
+			})
+
+			// delete old profile image
+			con.query(`SELECT user_img_filename FROM users WHERE user_id=${con.escape(req.session.userID)}`, function(err, result){
+				if(result.length > 0)
+					fs.unlink(__dirname + '/../profile_imgs/' + result[0].user_img_filename, function(err){ if (err) console.log(err) });
+			})
+			sql += `, user_img_filename=${con.escape(img_filename)}`
+		}
+
+		// if the password was changed, update it
+		if(data.pw){
+			bcrypt.hash(data.pw, 10, function(err, hash){
+				sql += `, user_pw=${con.escape(hash)}`;
+				con.query(sql + sqlEnd, function(err, result){
+					if (err)
+						res.send({success: false})
+					else
+						res.send({success: true})
+				})
+			})
+		}else{
+			con.query(sql + sqlEnd, function(err, result){
+				if (err)
+					res.send({success: false})
+				else
+					res.send({success: true})
+			})
+		}
+	})
+
+}
+
+
+function getMembersInfo(groups, index, con, res){
+	if(index == groups.length)
+		res.send(JSON.stringify(groups))
+	else{
+		var invitedToList = JSON.parse(groups[index].g_status).invited_to;
+		var idList = "(" + con.escape(JSON.parse(groups[index].g_status).invited_from);
+		for(j = 0; j < invitedToList.length; j++){
+			if(invitedToList[j].accepted)
+				idList += ", " + con.escape(invitedToList[j].user_id)
+		}
+		idList += ")"
+		var membersSql = `SELECT user_id, user_name, user_img_filename FROM users WHERE user_id IN ${idList}`
+		con.query(membersSql, function(err, result){
+			groups[index].members = result;
+			getMembersInfo(groups, index+1, con, res)
+		})
+	}
 }

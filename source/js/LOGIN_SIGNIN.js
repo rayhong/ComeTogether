@@ -25,9 +25,17 @@ $.ajax({
 
 			// verifying fields are filled and if they are make login button clickable
 			$("#input_id").keyup(function(){
+				if($(this).val() != "")
+					$(this).css("color", "#000");
+				else
+					$(this).css("color", "#aaa");
 				verify_filled();
 			})
 			$("#input_pw").keyup(function(){
+				if($(this).val() != "")
+					$(this).css("color", "#000");
+				else
+					$(this).css("color", "#aaa");
 				verify_filled();
 			})
 

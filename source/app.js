@@ -8,6 +8,8 @@ var mysqlStore = require('express-mysql-session')(session);
 
 var app = express();
 
+var server = require('http').createServer(app);
+
 var options = {
 	host: "hdslab.hcde.uw.edu",
 	user: "traffigram",
@@ -30,8 +32,7 @@ con.connect(function(err){
 	console.log("connected!");
 })
 
-// install middleware for static files and json posts
-app.use(express.static(__dirname));
+// middleware for json posts
 app.use(bodyParser.json());
 
 // middleware for session/cookie handling
@@ -42,9 +43,26 @@ app.use(session({
 	store: sessionStore
 }))
 
-// initiate controller for index page (including regitration and login pages)
+// initiate controller for index page (including registration and login pages)
 indexController(app, con);
 
+// install middleware for static files
+app.use(express.static(__dirname));
+
 // start the server
-app.listen(8000);
+server.listen(8000);
 console.log('server up');
+
+
+// returns the current time as a string timestamp 'YYYY-MM-DD HH:MM:SS'
+function getTimestamp(){
+	var date = new Date();
+	var result = ""
+	result += date.getFullYear() + '-';
+	result += (date.getMonth()<9 ? "0" + (date.getMonth()+1) : (date.getMonth()+1)) + "-"
+	result += (date.getDate()<10 ? "0" + date.getDate() : date.getDate()) + " "
+	result += (date.getHours()<10 ? "0" + date.getHours() : date.getHours()) + ":" 
+	result += (date.getMinutes()<10 ? "0" + date.getMinutes() : date.getMinutes()) + ":" 
+	result += (date.getSeconds()<10 ? "0" + date.getSeconds() : date.getSeconds());
+	return result;
+}
