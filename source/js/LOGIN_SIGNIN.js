@@ -98,15 +98,11 @@ function verify_info(){
 		dataType: 'json',
 		success: function(data){
 			if(data.success){
-				console.log("login successful");
 				// load the next screen
 				offEvents_login_signin();
 				loadScreen_login_signin("DASHBOARD");	
 			}else{
-				if(data.issue) // data.issue = true if email is the problem
-					console.log("no such email found");
-				else
-					console.log("password does not match");
+				$("#err-msg").show();
 			}
 		}
 	})
