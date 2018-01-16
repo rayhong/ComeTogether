@@ -2,7 +2,7 @@
 	<div id="left">
 		<img src="img/LOGIN_INIT_LOGO.png"/>
 		<div class="moto">Find Places together</div>
-		<div class="description">Please fillout the information on the right</br>to create your account.</div>
+		<div class="description">Please fill out the information on the right</br>to create your account.</div>
 	</div>
 	<div id="right">
 		<div class="login_heading"> BASIC INFORMATION 
@@ -11,7 +11,7 @@
 				<span id="check_email">*</span>
 			</div>
 			<div>
-				<p id="email_err" style="font-size: 14px; color: #c33; margin: 0; top: -2px; position:relative; width: 335px"></p>
+				<p id="email_err" class="valid_error_msg"></p>
 			</div>
 			<div>
 				<span><input type="text" id="input_name" class="input_text" placeholder="Your name"/></span>
@@ -22,14 +22,14 @@
 				<span id="check_pw">*</span>
 			</div>
 			<div>
-				<p id="pw_err" style="font-size: 14px; color: #c33; margin: 0; top: -2px; position:relative; width: 335px"></p>
+				<p id="pw_err" class="valid_error_msg"></p>
 			</div>
 			<div> 
 				<span><input type="password" id="input_pwconf" class="input_text" placeholder="Confirm your password" data-verified="false"/></span>
 				<span id="check_pwconf">*</span>
 			</div>
 			<div>
-				<p id="pwconf_err" style="font-size: 14px; color: #c33; margin: 0; top: -2px; position:relative; width: 335px"></p>
+				<p id="pwconf_err" class="valid_error_msg"></p>
 			</div>
 		</div>
 		<div class="login_heading"> YOUR PROFILE 
@@ -40,7 +40,7 @@
 				<div id="login_profile_right"> Your friends will rely on your profile image to identify you while searching destinations together. We encourage you to use a picture of yourself that shows you clearly.</div>
 			</div>
 			<!-- hidden input to upload files -->
-			<input type="file" id="img_upload" style="display:none" data-filled="false"/>
+			<input type="file" id="img_upload" style="display:none" accept="image/*" data-filled="false"/>
 			<span class="btn" id="PROFILE_UPLOAD" style="margin-left:0px;">
 				<img src=""/> UPLOAD
 			</span><span id="check_img">*</span>

@@ -13,6 +13,7 @@ body{
 	background-color: #66CBE6;
 	font-family: 'Roboto';
 	color: #FFF;
+	margin: 0;
 }
 
 #canvas{
@@ -107,6 +108,15 @@ a {
 	font-size: 18px;
 }
 
+.valid_error_msg{
+	font-size: 14px; 
+	color: #c33; 
+	margin: 0; 
+	top: -2px; 
+	position:relative; 
+	width: 335px
+}
+
 /*Screen LOGIN_INIT*/
 #SCR_LOGIN_INIT{
 	position: relative;
@@ -191,4 +201,318 @@ a {
 	margin-top: 15px;
 	font-size: 18px;
 	font-weight: 300;
+}
+
+/* Screen LOGIN_SIGNUP_DONE */
+.modal {
+	position: fixed;
+	z-index: 1;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0,0,0,0.4)
+}
+
+.modal-content {
+	display: none;
+	background-color: white;
+	margin: 10% auto;
+	padding: 30px;
+	width: 350px;
+	box-shadow: 0 0 5px #aaa;
+}
+
+.modal-content h2{
+	color: black;
+	margin-top: 0;
+	margin-bottom: 5px;
+}
+.modal-content p{
+	color: #ccc;
+	margin-top: 0;
+	margin-bottom: 20px;
+	font-size: 14px;
+}
+
+/* Screen DASHBOARD */
+#SCR_DASHBOARD{
+	position:relative;
+	text-align:center;
+}
+
+#SCR_DASHBOARD #top-bar{
+	position: relative;
+	margin: 25px;
+	height: 50px;
+}
+
+#info-widget{
+	background-color: white;
+	border: none;
+	border-radius: 5px;
+	box-shadow: 0 5px 20px -5px #555;
+	position: absolute;
+	right: 0px;
+}
+
+#user-img{
+	width: 32px;
+	height: 32px;
+	display: inline-block;
+	border-radius: 5px 0px 0px 5px;
+	padding: 3px 0 0 5px;
+}
+#user-img img{
+	border-radius: 50%;
+	width: 100%;
+	height: 100%;
+}
+
+#user-info{
+	color: #aaa;
+	display: inline-block;
+	font-size: 25px;
+	padding: 5px 10px 5px 5px;
+	vertical-align: top;
+}
+
+#SETTINGS{
+	width: 30px;
+	height: 30px;
+	background-color: #66cbe6;
+	display: inline-block;
+	border-radius: 0 5px 5px 0;
+	padding: 5px;
+}
+
+#SETTINGS img{
+	height: 100%;
+	width: 100%;
+}
+
+#SETTINGS:hover{
+	cursor: pointer;
+	background-color: #60b8d0;
+}
+
+
+#SCR_DASHBOARD #top{
+	height: 330px;
+}
+
+#SCR_DASHBOARD #bot{
+	background-color: white;
+}
+
+#create_new{
+	padding-top: 20px;
+}
+
+#event_title{
+	height: 30px;
+	margin: 0;
+}
+
+#EVENT_CREATE{
+	width: 200px;
+	margin: 0;
+}
+
+.group_list{
+	padding: 25px;
+	width: 425px;
+	margin-left: auto;
+	margin-right: auto;
+}
+
+.group_entry{
+	padding: 10px;
+	text-align: left;
+}
+.group_entry img{
+	height: 35px;
+	width: 35px;
+	border-radius: 50%;
+	margin-right: 10px;
+}
+.group_entry h1{
+	margin: 5px 0 5px 0;
+	font-size: 15px;
+	color: #aaa;
+}
+.group_entry .group_title{
+	font-size: 25px;
+	color: black;
+}
+.group_entry p{
+	margin: 5px 0 5px 0;
+	font-size: 15px;
+	color: #aaa;
+}
+.group_entry .num_msgs{
+	color: #f00;
+}
+.group_entry .btn{
+	margin-left: 0;
+	margin-right: 5px;
+	width: max-content;
+	padding: 0 10px 0 10px;
+}
+
+/*Screen for EVENT_CREATE */
+#SCR_EVENT_CREATE{
+	position:relative;
+	text-align:center;
+	width:840px;
+}
+
+#SCR_EVENT_CREATE #left{
+	position:absolute;
+	text-align:center;
+	width:420px;
+	left:0px;
+}
+
+#SCR_EVENT_CREATE #right{
+	position:absolute;
+	text-align:left;
+	width:420px;
+	left:420px;
+	padding-left: 20px;
+}
+
+#input_note{
+	width: 328px;
+	height: 125px;
+}
+
+#check_note{
+	position: absolute;
+	right: 68px;
+	top: 103px;
+}
+
+/*Screen for EVENT_CREATE_READY */
+#SCR_EVENT_CREATE_READY{
+	position:relative;
+	text-align:center;
+	width:840px;
+}
+
+#SCR_EVENT_CREATE_READY #left{
+	position:absolute;
+	text-align:center;
+	width:420px;
+	left:0px;
+}
+
+#SCR_EVENT_CREATE_READY #right{
+	position:absolute;
+	text-align:left;
+	width:470px;
+	left:420px;
+	padding-left: 20px;
+}
+
+#SCR_EVENT_CREATE_READY .input_text{
+	margin-right: 0px;
+	height: 30px;
+}
+
+#SCR_EVENT_CREATE_READY .btn{
+	width: 125px;
+}
+
+#SCR_EVENT_CREATE_READY .info-label{
+	font-weight: 100;
+}
+
+#SCR_EVENT_CREATE_READY .description{
+	font-weight: normal;
+	font-size: 14px;
+}
+
+#SCR_EVENT_CREATE_READY #group_url{
+	width: 280px;
+}
+
+#SCR_EVENT_CREATE_READY #input_email{
+	width: 200px;
+}
+
+.email-remove{
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+#popup_msg .input_text{
+	margin-bottom: 30px;
+	margin-right: 0px;
+	height: 30px;
+}
+
+#popup_msg .btn{
+	width: 125px;
+}
+
+/*Screen for SETTINGS*/
+#SCR_SETTINGS{
+	position:relative;
+	text-align:center;
+	width:840px;
+}
+
+#SCR_SETTINGS #left{
+	position:absolute;
+	text-align:center;
+	width:420px;
+	left:0px;
+}
+
+#SCR_SETTINGS #right{
+	position:absolute;
+	text-align:left;
+	width:480px;
+	left:420px;
+	padding-left: 20px;
+}
+
+#SCR_SETTINGS .btn{
+	width: 125px;
+}
+
+#SCR_SETTINGS .btn_dis{
+	width: 125px;
+}
+
+#SCR_SETTINGS .input_text{
+	margin-top: 0px;
+	margin-right: 0px;
+	height: 30px;
+}
+
+#SCR_SETTINGS .label{
+	font-weight: 500;
+	font-size: 14px;
+}
+
+#SCR_SETTINGS .label{
+	font-weight: 500;
+	font-size: 14px;
+}
+
+#SCR_SETTINGS #PROFILE_UPLOAD{
+	margin-bottom: 10px;
+}
+
+#SCR_SETTINGS .screen_info {
+	margin-top: 30px;
+}
+
+#SCR_SETTINGS .screen_info p{
+	font-size: 20px;
+	margin-bottom: 10px;
+}
+
+#SCR_SETTINGS .copy_url{
+	margin-left:0px;
 }
