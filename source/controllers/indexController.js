@@ -22,29 +22,7 @@ module.exports = function(app, con){
 	// handlers to serve html files
 	app.get('/', function(req, res){
 		if(req.session.userID){
-			if(req.query.group_id){
-				var groupSql = `UPDATE groups SET g_status=JSON_ARRAY_APPEND(g_status, '$.invited_to', JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'accepted', true)) 
-								WHERE g_id=${con.escape(req.query.group_id)} AND JSON_SEARCH(g_status, 'one', ${con.escape(req.session.userID)}, NULL, '$.invited_to[*].user_id') IS NULL 
-								AND g_status->'$.invited_from' != ${con.escape(req.session.userID)}`
-				con.query(groupSql, function(err, result){
-					if (err)
-						res.sendFile('alt_index.html', {root: __dirname + '/../html'})
-					else{
-						if(result.affectedRows != 0){
-							var userSql = `UPDATE users SET user_groups = JSON_ARRAY_APPEND(user_groups, '$.data', ${con.escape(req.query.group_id)}) 
-											WHERE user_id=${con.escape(req.session.userID)} AND 
-											JSON_SEARCH(user_groups, 'one', ${con.escape(req.query.group_id)}, NULL, '$.data') IS NULL`
-							con.query(userSql, function(err, result){
-								res.sendFile('alt_index.html', {root: __dirname + '/../html'})
-							})
-						}else{
-							res.sendFile('alt_index.html', {root: __dirname + '/../html'})
-						}
-					}
-				})
-			}else{
-				res.sendFile('alt_index.html', {root: __dirname + '/../html'});
-			}
+			res.sendFile('alt_index.html', {root: __dirname + '/../html'});
 		}else{
 			res.sendFile('index.html', {root: __dirname + '/../'});
 		}
@@ -53,7 +31,7 @@ module.exports = function(app, con){
 	// post handler for uploading images and storing in temp
 	app.post('/uploadimg', function(req, res){
 		upload(req, res, function(err){
-			if(err) throw err;
+			if(err) console.log(err);
 			res.send(JSON.stringify({name: req.file.filename}));
 		})
 	})
@@ -75,21 +53,21 @@ module.exports = function(app, con){
 				else{
 					// hash the password
 					bcrypt.hash(data.password, 10, function(err, hash){
-						if (err) throw err;
+						if (err) console.log(err);
 						var img_dir = __dirname + "/../temp/" + data.filename;
 
-						var img_filename = "" + Date.now() + data.name[0] + path.extname(img_dir);
+						var img_filename = "" + Date.now() + data.firstname[0] + data.lastname[0] + path.extname(img_dir);
 						fs.readFile(img_dir, function(err, img){
-							if (err) throw err;
+							if (err) console.log(err);
 							fs.writeFile(__dirname + "/../profile_imgs/" + img_filename, img, function(err){
-								if (err) throw err;
-								fs.unlink(img_dir, function(err){ if (err) throw err; });
+								if (err) console.log(err);
+								fs.unlink(img_dir, function(err){ if (err) console.log(err); });
 							})
 						})
 
 						// create the sql query string
-						var sql = `INSERT INTO users (user_id, user_pw, user_name, user_home_address, user_office_address, user_groups, user_img_filename) 
-									VALUES (${con.escape(data.email)}, '${hash}', ${con.escape(data.name)}, 
+						var sql = `INSERT INTO users (user_id, user_pw, user_first_name, user_last_name, user_home_address, user_office_address, user_groups, user_img_filename) 
+									VALUES (${con.escape(data.email)}, '${hash}', ${con.escape(data.firstname)},  ${con.escape(data.lastname)},
 									${data.homeaddr == "" ? 'NULL' : con.escape(data.homeaddr)}, 
 									${data.officeaddr == "" ? 'NULL' : con.escape(data.officeaddr)}, 
 									JSON_OBJECT('type', 'user_groups', 'data', JSON_ARRAY()), ${con.escape(img_filename)})`;
@@ -150,10 +128,10 @@ module.exports = function(app, con){
 
 	// handler for GET requests for user information
 	app.get('/get_user_info', function(req, res){
-		var sql = `SELECT user_id, user_name, user_home_address, user_office_address, user_img_filename, user_groups 
+		var sql = `SELECT user_id, user_first_name, user_last_name, user_home_address, user_office_address, user_img_filename, user_groups 
 					FROM users WHERE user_id=${con.escape(req.session.userID)}`
 		con.query(sql, function(err, result){
-			var data = {id: result[0].user_id, name: result[0].user_name, 
+			var data = {id: result[0].user_id, firstname: result[0].user_first_name, lastname: result[0].user_last_name,
 						homeadd: result[0].user_home_address, officeadd: result[0].user_office_address,
 						filename: result[0].user_img_filename, groups: JSON.parse(result[0].user_groups).data}
 			res.send(JSON.stringify(data))
@@ -162,17 +140,9 @@ module.exports = function(app, con){
 
 	// returns information about the group/event specified in the url query
 	app.get('/get_group_info', function(req, res){
-		var groups = req.query.data;
-		if(groups){
-			var stringList = "("
-			for(i = 0; i < groups.length; i++){
-				if(i != 0)
-					stringList += ", "
-				stringList += con.escape(groups[i])
-			}
-			stringList += ")"
-
-			var sql = `SELECT g_id, g_title, g_date, g_info, g_status FROM groups WHERE g_id IN ${stringList}`
+		var data = req.query.data;
+		if(data !== '()'){
+			var sql = `SELECT g_id, g_title, g_date, g_info, g_status, g_chat_log FROM groups WHERE g_id IN ${data}`
 			con.query(sql, function(err, result){
 				getMembersInfo(result, 0, con, res)
 			})
@@ -219,7 +189,10 @@ module.exports = function(app, con){
 			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_info, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
 					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, ${con.escape(data.note)}, 
 					   JSON_OBJECT('ongoing', true, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
-					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY()), JSON_OBJECT('type', 'g_fav', 'data', JSON_ARRAY()), 
+					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY(
+					   JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'top_init', false, 'top', JSON_ARRAY(), 'price_init', false, 
+					   'price', JSON_OBJECT('min', '$', 'max', '$$$$'), 'rating_init', false, 'rating', 0, 'reviews_init', false, 
+					   'reviews', JSON_OBJECT('min', 10, 'max', 100), 'cities_init', false, 'cities', JSON_ARRAY()))), JSON_OBJECT('type', 'g_fav', 'data', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_chat_log', 'data', JSON_ARRAY()), JSON_OBJECT('type', 'g_ping_log', 'g_id', null, 'data', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_behavior_log', 'g_id', null, 'timestamp', JSON_OBJECT('initiated', ${Date.now()}, 'terminated', null), 'activities', JSON_ARRAY()))`
 			con.query(sql, function(err, result){
@@ -251,7 +224,7 @@ module.exports = function(app, con){
 	app.post('/finish_group', function(req, res){
 		var g_id = req.session.g_id;
 		delete req.session.g_id;
-		var userSql = `UPDATE users SET user_groups=JSON_ARRAY_APPEND(user_groups, '$.data', ${con.escape(g_id)}) 
+		var userSql = `UPDATE users SET user_groups=JSON_ARRAY_APPEND(user_groups, '$.data', JSON_OBJECT('g_id', ${con.escape(g_id)}, 'last_access_time', CURRENT_TIMESTAMP)) 
 						WHERE user_id=${con.escape(req.session.userID)}`
 		con.query(userSql, function(err, result){
 			if(err){
@@ -268,7 +241,8 @@ module.exports = function(app, con){
 	// handler for updating user information
 	app.post('/update_info', function(req, res){
 		var data = req.body;
-		var sql = `UPDATE users SET user_name=${con.escape(data.name)}, user_home_address=${data.homeadd == "" ? 'NULL' : con.escape(data.homeadd)}, 
+		var sql = `UPDATE users SET user_first_name=${con.escape(data.firstname)}, user_last_name=${con.escape(data.lastname)}, 
+					user_home_address=${data.homeadd == "" ? 'NULL' : con.escape(data.homeadd)}, 
 					user_office_address=${data.officeadd == "" ? 'NULL' : con.escape(data.officeadd)}`
 		var sqlEnd = ` WHERE user_id=${con.escape(req.session.userID)}`;
 
@@ -277,11 +251,11 @@ module.exports = function(app, con){
 			var img_dir = __dirname + "/../temp/" + data.filename;
 
 			// move img file from temp to profile_imgs folder with new name
-			var img_filename = "" + Date.now() + data.name[0] + path.extname(img_dir);
+			var img_filename = "" + Date.now() + data.firstname[0] + data.lastname[0] + path.extname(img_dir);
 			fs.readFile(img_dir, function(err, img){
-				if (err) throw err;
+				if (err) console.log(err);
 				fs.writeFile(__dirname + "/../profile_imgs/" + img_filename, img, function(err){
-					if (err) throw err;
+					if (err) console.log(err);
 					fs.unlink(img_dir, function(err){ if (err) console.log(err) });
 				})
 			})
@@ -329,7 +303,8 @@ function getMembersInfo(groups, index, con, res){
 				idList += ", " + con.escape(invitedToList[j].user_id)
 		}
 		idList += ")"
-		var membersSql = `SELECT user_id, user_name, user_img_filename FROM users WHERE user_id IN ${idList}`
+		var membersSql = `SELECT user_id, user_first_name, user_last_name, 
+							user_img_filename FROM users WHERE user_id IN ${idList}`
 		con.query(membersSql, function(err, result){
 			groups[index].members = result;
 			getMembersInfo(groups, index+1, con, res)

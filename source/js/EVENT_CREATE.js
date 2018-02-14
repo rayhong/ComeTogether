@@ -69,26 +69,20 @@ $.ajax({
 
 			// verify fields on keyup
 			$("#input_title").keyup(function(){
-				if($(this).val() != ""){
-					$(this).css("color", "#000");
+				if($(this).val() != "")
 					$("#check_title").html("&#10004;");
-				}else{
-					$(this).css("color", "#aaa");
+				else
 					$("#check_title").html("*");
-				}
 				verify_required();
 			})
 			$("#input_date").change(function(){
 				verify_date();
 			})
 			$("#input_note").keyup(function(){
-				if($(this).val() != ""){
-					$(this).css("color", "#000");
+				if($(this).val() != "")
 					$("#check_note").html("&#10004;");
-				}else{
-					$(this).css("color", "#aaa");
+				else
 					$("#check_note").html("*");
-				}
 				verify_required();
 			})
 

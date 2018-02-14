@@ -2,6 +2,8 @@
 var express = require('express');
 var mysql = require('mysql');
 var indexController = require('./controllers/indexController');
+var mainController = require('./controllers/mainController')
+var socketController = require('./controllers/socketController');
 var bodyParser = require("body-parser");
 var session = require('express-session');
 var mysqlStore = require('express-mysql-session')(session);
@@ -41,10 +43,19 @@ app.use(session({
 	resave: false,
 	saveUninitialized: false,
 	store: sessionStore
+	/*
+	name: 'random-name?',
+	cookie: {
+		secure: true,
+		httpOnly: true
+	}
+	*/
 }))
 
-// initiate controller for index page (including registration and login pages)
+// initiate controller for index page and main page(including registration and login pages)
 indexController(app, con);
+mainController(app, con);
+socketController(server, con)
 
 // install middleware for static files
 app.use(express.static(__dirname));

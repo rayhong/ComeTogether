@@ -35,7 +35,6 @@ $.ajax({
 
 			// verify email if user stops typing for 0.5 secs
 			$("#input_email").keyup(function(){
-				$(this).val() !="" ? $(this).css("color", "#000") : $(this).css("color", "#aaa");
 				clearTimeout(emailTimer);
 				emailTimer = setTimeout(verify_email, typingInterval);
 			})
@@ -46,13 +45,21 @@ $.ajax({
 				clearTimeout(emailTimer);
 			})
 
-			// verify name on keyup
-			$("#input_name").keyup(function(){
+			// verify first name and last name on keyup
+			$("#input_first_name").keyup(function(){
 				if($(this).val() != ""){
-					$(this).css("color", "#000");
-					$("#check_name").html("&#10004;");
+					if($("#input_last_name").val() != "")
+						$("#check_name").html("&#10004;");
 				}else{
-					$(this).css("color", "#aaa");
+					$("#check_name").html("*");
+				}
+				verify_required();
+			})
+			$("#input_last_name").keyup(function(){
+				if($(this).val() != ""){
+					if($("#input_first_name").val() != "")
+						$("#check_name").html("&#10004;");
+				}else{
 					$("#check_name").html("*");
 				}
 				verify_required();
@@ -60,7 +67,6 @@ $.ajax({
 
 			// verify pw and pwconf when user stops typing
 			$("#input_pw").keyup(function(){
-				$(this).val() !="" ? $(this).css("color", "#000") : $(this).css("color", "#aaa");
 				clearTimeout(pwTimer);
 				pwTimer = setTimeout(verify_pw, typingInterval);
 			})
@@ -71,7 +77,6 @@ $.ajax({
 			})
 
 			$("#input_pwconf").keyup(function(){
-				$(this).val() !="" ? $(this).css("color", "#000") : $(this).css("color", "#aaa");
 				clearTimeout(pwconfTimer);
 				pwconfTimer = setTimeout(verify_pwconf, typingInterval);
 			})
@@ -83,16 +88,12 @@ $.ajax({
 
 			// verify home and office addresses on keyup
 			$("#input_homeadd").keyup(function(){
-				if(!$("#check_homeadd").is(":checked")){
-					$(this).val()!="" ? $(this).css("color", "#000") : $(this).css("color", "#aaa");
+				if(!$("#check_homeadd").is(":checked"))
 					verify_required();
-				}
 			})
 			$("#input_officeadd").keyup(function(){
-				if(!$("#check_officeadd").is(":checked")){
-					$(this).val()!="" ? $(this).css("color", "#000") : $(this).css("color", "#aaa");
+				if(!$("#check_officeadd").is(":checked"))
 					verify_required();
-				}
 			})
 
 			// make home and office address inputs writeable if "Do not want to specify" boxes are not checked
@@ -261,7 +262,7 @@ function verify_pwconf(){
 // and change register button if they are
 function verify_required(){
 	// checks if all necessary fields are filled or verified
-	if($("#input_email").data("verified") && $("#input_name").val() != "" && 
+	if($("#input_email").data("verified") && $("#input_first_name").val() != "" && $("#input_last_name").val() != "" &&
 		$("#input_pw").data("verified") && $("#input_pwconf").data("verified") && $("#img_upload").data("filled") &&
 		($("#check_homeadd").is(":checked") || $("#input_homeadd").val() != "") && 
 		($("#check_officeadd").is(":checked") || $("#input_officeadd").val() != "")){
@@ -274,9 +275,9 @@ function verify_required(){
 function post_register(){
 	var formData = new FormData();
 	formData.append('file', $("#img_upload")[0].files[0]);
-	var data = {"email": $("#input_email").val(), "name": $("#input_name").val(), 
-				"password": $("#input_pw").val(), "homeaddr": $("#input_homeadd").val(),
-				"officeaddr": $("#input_officeadd").val()};
+	var data = {"email": $("#input_email").val(), "firstname": $("#input_first_name").val(), 
+				"lastname": $("#input_last_name").val(), "password": $("#input_pw").val(), 
+				"homeaddr": $("#input_homeadd").val(), "officeaddr": $("#input_officeadd").val()};
 	if($("#check_homeadd").is(":checked"))
 		data.homeaddr = "";
 	if($("#check_officeadd").is(":checked"))
@@ -304,7 +305,7 @@ function post_register(){
 					if(data.success){
 						offEvents_login_signup();
 						// LOGIN_SIGNUP_DONE
-						$(".modal").append('<div id="popup_msg" class="modal-content"><h2> THANK YOU FOR SIGNING UP! </h2><p> We wish you enjoy using ComeTogether, ' + $("#input_name").val() + '!</p><span class="btn" id="DASHBOARD"> &#10004; PROCEED </span></div>')
+						$(".modal").append('<div id="popup_msg" class="modal-content"><h2> THANK YOU FOR SIGNING UP! </h2><p> We wish you enjoy using ComeTogether, ' + $("#input_first_name").val() + '!</p><span class="btn" id="DASHBOARD"> &#10004; PROCEED </span></div>')
 						$("#popup_msg").fadeIn(function(){
 							$(document).on("click", "#DASHBOARD", function(){
 								//screen will be updated. Off events.
