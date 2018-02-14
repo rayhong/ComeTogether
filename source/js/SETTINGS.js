@@ -18,15 +18,13 @@ $.ajax({
 		$("#canvas").empty();
 		$("#canvas").append(data);
 		setTimeout(function(){
-			//Step 2. resize the divs
 			var height_window = $(window).height();
 			var width_window = $(window).width();
 			var height_cont_right = $("#SCR_SETTINGS #right").height();
 			var height_cont_left = $("#SCR_SETTINGS #left").height();
-			var height_cont = height_cont_right;
-			$("#SCR_SETTINGS #left").css("top", (height_cont_right-height_cont_left)/2);
-			$("#SCR_SETTINGS").css("top", (height_window - height_cont)/2 - 30 + "px");
 			$("#SCR_SETTINGS").css("left", (width_window - 800)/2 + "px");
+			$("#SCR_SETTINGS #left").css("top", (height_cont_right-height_cont_left)/2 + "px");
+			$("#SCR_SETTINGS").css("top", (height_window - height_cont_right)/2 + "px");
 			$(".credit").css("top", (height_window - 40) + "px");
 
 
@@ -38,7 +36,8 @@ $.ajax({
 				dataType: "json",
 				success: function(data){
 					$("#input_email").val(data.id);
-					$("#input_name").val(data.name).css("color", "#000");
+					$("#input_first_name").val(data.firstname).css("color", "#000");
+					$("#input_last_name").val(data.lastname).css("color", "#000");
 					$("#input_pw").val("placeholder").css("color", "#000");
 					$("#input_pwconf").val("placeholder").css("color", "#000");
 					$("#profile_pic").attr("src", "/profile_imgs/" + data.filename)
@@ -66,8 +65,9 @@ $.ajax({
 													<span class="label">${groupData.g_title} <span style="font-weight:lighter">on</span> ${groupData.g_date.slice(0,10)}</span>
 												</div>
 												<div>
-													<span><input type="text" id="group${groupData.g_id}" class="input_text" value="https://127.0.0.1:8000/?group_id=${groupData.g_id}" readonly/></span><!--
-													--><span class="btn copy_url" data-g_id="${groupData.g_id}">COPY URL</span>
+													<span><input type="text" id="group${groupData.g_id}" class="input_text" 
+													value="https://127.0.0.1:8000/?group_id=${groupData.g_id}" style="margin-right: 0px" readonly/>
+													</span><span class="btn copy_url" data-g_id="${groupData.g_id}">COPY URL</span>
 												</div>`
 									$("#url_list").append(html)
 									$(".copy_url").click(function(){
@@ -78,14 +78,6 @@ $.ajax({
 										$temp.remove()
 									})
 								}
-								$("#url_list").fadeIn()
-								var height_window = $(window).height();
-								var height_cont_right = $("#SCR_SETTINGS #right").height();
-								var height_cont_left = $("#SCR_SETTINGS #left").height();
-								var height_cont = height_cont_right;
-								$("#SCR_SETTINGS #left").css("top", (height_cont_right-height_cont_left)/2);
-								$("#SCR_SETTINGS").css("top", (height_window - height_cont)/2 - 30 + "px");
-								$(".credit").css("top", (height_window - 40) + "px");
 							}else{
 								$("#url_list").append(`<p style="color: #fff; font-size: 16px; font-weight: lighter"> You have no event links </p>`)
 							}
@@ -95,7 +87,17 @@ $.ajax({
 			})
 
 			// verify name on keyup
-			$("#input_name").keyup(function(){
+			$("#input_first_name").keyup(function(){
+				anyChange = true;
+				if($(this).val() != ""){
+					$(this).css("color", "#000");
+				}else{
+					$(this).css("color", "#aaa");
+				}
+				$(this).data("changed", true)
+				verify_required();
+			})
+			$("#input_last_name").keyup(function(){
 				anyChange = true;
 				if($(this).val() != ""){
 					$(this).css("color", "#000");
@@ -305,7 +307,8 @@ function verify_pwconf(){
 // makes the update button clickable if they were
 function verify_required(){
 	if(anyChange){
-		if((!$("#input_name").data("changed") || $("#input_name").val() != "") &&
+		if((!$("#input_first_name").data("changed") || $("#input_first_name").val() != "") &&
+			(!$("#input_last_name").data("changed") || $("#input_last_name").val() != "") &&
 			(!$("#input_pw").data("changed") || ($("#input_pw").data("verified") && $("#input_pwconf").data("verified"))) &&
 			(!$("#input_homeadd").data("changed") || ($("#check_homeadd").is(":checked") || $("#input_homeadd").val() != "")) &&
 			(!$("#input_officeadd").data("changed") || ($("#check_officeadd").is(":checked") || $("#input_officeadd").val() != "")) &&
@@ -343,7 +346,8 @@ function update(){
 // updates the user information
 // by posting it after the image has been uploaded
 function update_info(filename){
-	var data = {name: $("#input_name").val(), pw: false, homeadd: $("#input_homeadd").val(), 
+	var data = {firstname: $("#input_first_name").val(), lastname: $("#input_last_name").val(),
+				pw: false, homeadd: $("#input_homeadd").val(), 
 				officeadd: $("#input_officeadd").val(), filename: filename};
 
 	if($("#check_homeadd").is(":checked"))
@@ -363,7 +367,8 @@ function update_info(filename){
 			// refreshes the page if updates were carried out successfuly
 			if(data.success){
 				anyChange = false;
-				$("#input_name").data("changed", false);
+				$("#input_first_name").data("changed", false);
+				$("#input_last_name").data("changed", false);
 				$("#input_pw").data("changed", false).data("verified", false);
 				$("#input_pwconf").data("verified", false);
 				$("#img_upload").data("filled", false).data("changed", false);

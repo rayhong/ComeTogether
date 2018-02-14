@@ -28,7 +28,7 @@ $.ajax({
 			$("#event-title").text(title);
 			$("#event-date").text(date);
 			$("#event-note").text(note);
-			$("#group_url").val("http://127.0.0.1/?group_id=" + window.localStorage.group_id);
+			$("#group_url").val("http://127.0.0.1:8000/main?group_id=" + window.localStorage.group_id);
 
 			$(document).on("click", "#EVENT_CREATE", function(){
 				offEvents_event_create_ready();
@@ -45,10 +45,6 @@ $.ajax({
 
 			$("#input_email").keyup(function(){
 				$("#email-err-msg").hide();
-				if($(this).val() != "")
-					$(this).css("color", "#000");
-				else
-					$(this).css("color", "#aaa");
 			})
 
 			$(document).on("click", "#add_email", function(){

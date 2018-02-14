@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title> ComeTogether </title>
+		<meta content="text/html;charset=utf-8" http-equiv="Content-Type">
+		<meta content="utf-8" http-equiv="encoding">
+		<!-- CSS -->
+		<link href='cometogether.css' type='text/css' rel='stylesheet'/>
+		<!-- Google font -->
+		<link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:300,400,700|Roboto:300,400,500" rel="stylesheet"> 
+		<!-- jQuery -->
+		<script src="http://code.jquery.com/jquery-1.12.0.min.js"></script>
+		<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+		<!-- Socket.io -->
+		<script src="/socket.io/socket.io.js"></script>
+		<!-- JS -->
+		<script src="js/MAIN.js"></script>
+		<script src="js/filters.js"></script>
+		<script src="js/messages.js"></script>
+		<script src="js/sockets.js"></script>
+	</head>
+	<body>
+		<div id="canvas">
+			<div id="SCR_MAIN" hidden>
+				<div id="top-bar">
+					<div class='bar-content' style='margin-top: 15px'>
+						<div style='width: 320px; font-size: 30px;'>
+							<img style='height: 40px; width: 40px' src='../img/test.png'/>
+							<span style='vertical-align: top'>Meeting Name</span>
+						</div>
+						<div style='width: 540px;'>
+							<input class='input-search' type='text' style='width: 450px' placeholder='Which place are you looking for?'/>
+						</div>
+						<div id='btn-area' style='text-align: right; padding-right: 0'>
+							<img id='home-btn' style='height: 30px; width: 30px; cursor: pointer' src='../test_imgs/home.png'/>
+						</div>
+					</div>
+				</div>
+				<div id='content-area'>
+					<div id="left">
+						<h1 class='column-label'>Filters</h1>
+						<div id='member-list'>
+						</div>
+						<div id='profile-pics'>				
+						</div>
+						<div class='column-content'>
+							<div class="criteria">
+								<div style='display: inline-block; width: 160px'>
+									<span id='place-label' class="subject-label">
+										Place Categories
+									</span>
+									<img id='collapse-place' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
+								</div><!--
+								--><span id='you-label'> You </span><!--
+								--><span id='all-agreed-label'> All agreed? </span>
+								<div id='places-svg-container'></div>
+								<div class='option-select'>
+									<input id='place-no-pref' type='checkbox' checked>
+									<span> I don't have preferences on this criterion </span>
+								</div>
+								<div class='option-select'>
+									<input id='place-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
+								</div>
+								<div class='option-select'>
+									<input id='place-show-categories' type='checkbox'>
+									<span> Show every category </span>
+								</div>
+							</div>
+							<div class="criteria">
+								<div>
+									<span id='price-label' class="subject-label">
+										Price Range
+									</span>
+									<img id='collapse-price' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
+								</div>
+								<div id='prices-svg-container'>
+									<svg id='prices-svg' height="116">
+										<rect id="left-rect-price-0" class="criteria-rect" width="160" height="26" x="1" y="6"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
+										<text id="left-text-price-0" class="category-text" x="80" y="20" alignment-baseline="middle" text-anchor="middle">$$$$ (Ultra high-end)</text>
+										<rect id="right-rect-price-0" class="criteria-rect agreement-rect" x="201" y="6" height="26"></rect>
+										<text id="right-text-price-0" class="agreement-text" y="20" alignment-baseline="middle" text-anchor="middle"></text>
+
+										<rect id="left-rect-price-1" class="criteria-rect" width="160" height="26" x="1" y="32"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="32"></rect>
+										<text id="left-text-price-1" class="category-text" x="80" y="46" alignment-baseline="middle" text-anchor="middle">$$$ (Expensive)</text>
+										<rect id="right-rect-price-1" class="criteria-rect agreement-rect" x="201" y="32" width="120" height="26"></rect>
+										<text id="right-text-price-1" class="agreement-text" x="261" y="46" alignment-baseline="middle" text-anchor="middle"></text>
+
+										<rect id="left-rect-price-2" class="criteria-rect" width="160" height="26" x="1" y="58"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="58"></rect>
+										<text id="left-text-price-2" class="category-text" x="80" y="72" alignment-baseline="middle" text-anchor="middle">$$ (Moderate)</text>
+										<rect id="right-rect-price-2" class="criteria-rect agreement-rect" x="201" y="58" width="120" height="26"></rect>
+										<text id="right-text-price-2" class="agreement-text" x="261" y="72" alignment-baseline="middle" text-anchor="middle"></text>
+
+										<rect id="left-rect-price-3" class="criteria-rect" width="160" height="26" x="1" y="84"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="84"></rect>
+										<text id="left-text-price-3" class="category-text" x="80" y="98" alignment-baseline="middle" text-anchor="middle">$ (Inexpensive)</text>
+										<rect id="right-rect-price-3" class="criteria-rect agreement-rect" x="201" y="84" width="120" height="26"></rect>
+										<text id="right-text-price-3" class="agreement-text" x="261" y="98" alignment-baseline="middle" text-anchor="middle"></text>
+
+										<rect id="price-sel-area" class="criteria-rect selection-area" x="169" y="6" width="24" height="104"></rect>
+										<rect id="price-sel-area-agreed" class="criteria-rect selection-area" x="169" width="24"></rect>
+										<g id="price-members-sel" style="opacity: 0; transition: 0.2s">
+										</g>
+										<rect id='price-disagreed-border' class='disagreed-inner-border' x="2" y="6" height="104" style='opacity: 0'></rect>
+										<rect id="price-inner-border" class="agreed-inner-border" x="2"></rect>
+										<rect pointer-events="visible" id="price-slider-area" class="criteria-rect selection-area-border" x="161" y="6" width="40" height="104"></rect>
+										<rect id="top-handle" class="select-handle" x="165" y="1" width="32" height="10" rx="5" ry="5"></rect>
+										<rect id="bot-handle" class="select-handle" x="165" y="105" width="32" height="10" rx="5" ry="5"></rect>
+									</svg>
+								</div>
+								<div class='option-select'>
+									<input id='price-no-pref' type='checkbox' checked>
+									<span> I don't have preferences on this criterion </span>
+								</div>
+								<div class='option-select'>
+									<input id='price-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
+								</div>
+							</div>
+							<div class="criteria">
+								<div>
+									<span class="subject-label">
+										Ratings
+									</span>
+									<img id='collapse-rating' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
+								</div>
+								<div id='ratings-svg-container'>
+									<svg id='ratings-svg' height="142">
+										<rect id="left-rect-rating-0" class="criteria-rect rating-rect" width="160" height="26" x="1" y="6"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
+										<rect id="left-rect-rating-1" class="criteria-rect rating-rect" width="160" height="26" x="1" y="32"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="32"></rect>
+										<rect id="left-rect-rating-2" class="criteria-rect rating-rect" width="160" height="26" x="1" y="58"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="58"></rect>
+										<rect id="left-rect-rating-3" class="criteria-rect rating-rect" width="160" height="26" x="1" y="84"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="84"></rect>
+										<rect id="left-rect-rating-4" class="criteria-rect rating-rect" width="160" height="26" x="1" y="110"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="110"></rect>
+										<text class="category-text" x="80" y="6" alignment-baseline="middle" text-anchor="middle">5</text>
+										<text class="category-text" x="80" y="32" alignment-baseline="middle" text-anchor="middle">4</text>
+										<text class="category-text" x="80" y="58" alignment-baseline="middle" text-anchor="middle">3</text>
+										<text class="category-text" x="80" y="84" alignment-baseline="middle" text-anchor="middle">2</text>
+										<text class="category-text" x="80" y="110" alignment-baseline="middle" text-anchor="middle">1</text>
+										<text class="category-text" x="80" y="136" alignment-baseline="middle" text-anchor="middle">0</text>
+
+										<rect id="right-rect-agreed" class="criteria-rect agreed-rect" x="201" y="6"></rect>
+										<rect id="right-rect-disagreed" class="criteria-rect agreement-rect" x="201"></rect>
+										<text id="right-text-agreed" class="agreed-text" alignment-baseline="middle" text-anchor="middle">Yes!</text>
+										<text id="right-text-disagreed" class="agreement-text" alignment-baseline="middle" text-anchor="middle">No</text>
+
+										<rect id="rating-sel-area" class="criteria-rect selection-area" x="169" y="6" width="24" height="130"></rect>
+										<rect id="rating-sel-area-agreed" class="criteria-rect selection-area" x="169" y="6" width="24"></rect>
+										<rect id="rating-inner-border" class="agreed-inner-border" x="2" y="7" width="318"></rect>
+										<rect pointer-events="visible" id="rating-slider-area" class="criteria-rect selection-area-border" x="161" y="6" width="40" height="130"></rect>
+										<rect id="rating-handle" class="select-handle" x="165" y="131" width="32" height="10" rx="5" ry="5"></rect>
+									</svg>	
+								</div>
+								<div class='option-select'>
+									<input id='rating-no-pref' type='checkbox' checked>
+									<span> I don't have preferences on this criterion </span>
+								</div>
+							</div>
+							<div class="criteria">
+								<div>
+									<span id='review-label' class="subject-label">
+										Number of Reviews (Popularity)
+									</span>
+									<img id='collapse-review' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
+								</div>
+								<div id='reviews-svg-container'>
+									<svg id='reviews-svg' height="142">
+										<rect id="left-rect-review-0" class="criteria-rect review-rect" width="160" height="26" x="1" y="6"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
+										<rect id="left-rect-review-1" class="criteria-rect review-rect" width="160" height="26" x="1" y="32"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="32"></rect>
+										<rect id="left-rect-review-2" class="criteria-rect review-rect" width="160" height="26" x="1" y="58"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="58"></rect>
+										<rect id="left-rect-review-3" class="criteria-rect review-rect" width="160" height="26" x="1" y="84"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="84"></rect>
+										<rect id="left-rect-review-4" class="criteria-rect review-rect" width="160" height="26" x="1" y="110"></rect>
+										<rect class="criteria-rect" width="40" height="26" x="161" y="110"></rect>
+										<text class="category-text" x="80" y="6" alignment-baseline="middle" text-anchor="middle">Over 1000</text>
+										<text class="category-text" x="80" y="32" alignment-baseline="middle" text-anchor="middle">1000</text>
+										<text class="category-text" x="80" y="58" alignment-baseline="middle" text-anchor="middle">500</text>
+										<text class="category-text" x="80" y="84" alignment-baseline="middle" text-anchor="middle">100</text>
+										<text class="category-text" x="80" y="110" alignment-baseline="middle" text-anchor="middle">50</text>
+										<text class="category-text" x="80" y="136" alignment-baseline="middle" text-anchor="middle">0</text>
+
+										<rect id="right-rect-disagreed-top" class="criteria-rect agreement-rect" x="201" y="6" height="130"></rect>
+										<text id="right-text-disagreed-top" class="agreement-text" alignment-baseline="middle" text-anchor="middle" y='71' style='opacity: 0'>No</text>
+										<rect id="right-rect-agreed" class="criteria-rect agreed-rect" x="201" y="6"></rect>
+										<text id="right-text-agreed" class="agreed-text" alignment-baseline="middle" text-anchor="middle" style='opacity: 0'>Yes!</text>
+										<rect id="right-rect-disagreed-bot" class="criteria-rect agreement-rect" x="201"></rect>
+										<text id="right-text-disagreed-bot" class="agreement-text" alignment-baseline="middle" text-anchor="middle" style='opacity: 0'>No</text>
+
+										<rect id="review-sel-area" class="criteria-rect selection-area" x="169" y="6" width="24" height="130"></rect>
+										<rect id="review-sel-area-agreed" class="criteria-rect selection-area" x="169" y="6" width="24"></rect>
+										<rect id='review-disagreed-border' class='disagreed-inner-border' x="2" y="6" height="130" style='opacity: 0'></rect>
+										<rect id="review-inner-border" class="agreed-inner-border" x="2" y="7" width="318"></rect>
+										<rect pointer-events="visible" id="review-slider-area" class="criteria-rect selection-area-border" x="161" y="6" width="40" height="130"></rect>
+										<rect id="review-top-handle" class="select-handle" x="165" y="1" width="32" height="10" rx="5" ry="5"></rect>
+										<rect id="review-bot-handle" class="select-handle" x="165" y="131" width="32" height="10" rx="5" ry="5"></rect>
+									</svg>	
+								</div>
+								<div class='option-select'>
+									<input id='review-no-pref' type='checkbox' checked>
+									<span> I don't have preferences on this criterion </span>
+								</div>
+							</div>
+							<div class="criteria">
+								<div>
+									<span class="subject-label">
+										Cities / Neighborhood
+									</span>
+									<img class="collapse" src="test_imgs/expand.png"/>
+								</div>
+								<div id='location-svg'></div>
+								<div class='option-select'>
+									<input type='checkbox'>
+									<span> I don't have preferences on this criterion </span>
+								</div>
+							</div>
+						</div>
+					</div><!--
+					--><div id="middle">
+						<h1 class='column-label'>Places</h1>
+						<div class='radio-options'>
+							<input type='radio' name='place-list'>
+							<label>Show places matching my filter <b>(XX places)</b></label>
+							<input type='radio' name='place-list'>
+							<label>Show places in group archive <b>(XX places)</b></label>
+						</div>
+						<div class='column-content'>
+							<div id='places-list'>
+								<div class='place-entry'>
+									<div class='place-img-section'>
+										<img src='test_imgs/place2.png'/>
+										<input type='checkbox'><span> Add this to group archive </span>
+									</div>
+									<div class='place-info-section'>
+										<h1>Category</h1>
+										<h1><b>Name of this place | $$</b></h1>
+										<div class='place-reviews'>
+											<img src='test_imgs/rating.png'>
+											<span>XXXX reviews</span>
+										</div>
+										<h2>University District | some keywords</h2>
+										<div class='place-agreement-info'>
+											<div class='place-disagrees'>
+												<h2><b> Disagree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+											<div class='place-agrees'>
+												<h2><b> Agree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class='place-entry'>
+									<div class='place-img-section'>
+										<img src='test_imgs/place.png'/>
+										<input type='checkbox'><span> Add this to group archive </span>
+									</div>
+									<div class='place-info-section'>
+										<h1>Category</h1>
+										<h1><b>Name of this place | $$</b></h1>
+										<div class='place-reviews'>
+											<img src='test_imgs/rating.png'>
+											<span>XXXX reviews</span>
+										</div>
+										<h2>University District | some keywords</h2>
+										<div class='place-agreement-info'>
+											<div class='place-disagrees'>
+												<h2><b> Disagree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+											<div class='place-agrees'>
+												<h2><b> Agree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class='place-entry'>
+									<div class='place-img-section'>
+										<img src='test_imgs/place.png'/>
+										<input type='checkbox'><span> Add this to group archive </span>
+									</div>
+									<div class='place-info-section'>
+										<h1>Category</h1>
+										<h1><b>Name of this place | $$</b></h1>
+										<div class='place-reviews'>
+											<img src='test_imgs/rating.png'>
+											<span>XXXX reviews</span>
+										</div>
+										<h2>University District | some keywords</h2>
+										<div class='place-agreement-info'>
+											<div class='place-disagrees'>
+												<h2><b> Disagree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+											<div class='place-agrees'>
+												<h2><b> Agree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class='place-entry'>
+									<div class='place-img-section'>
+										<img src='test_imgs/place.png'/>
+										<input type='checkbox'><span> Add this to group archive </span>
+									</div>
+									<div class='place-info-section'>
+										<h1>Category</h1>
+										<h1><b>Name of this place | $$</b></h1>
+										<div class='place-reviews'>
+											<img src='test_imgs/rating.png'>
+											<span>XXXX reviews</span>
+										</div>
+										<h2>University District | some keywords</h2>
+										<div class='place-agreement-info'>
+											<div class='place-disagrees'>
+												<h2><b> Disagree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+											<div class='place-agrees'>
+												<h2><b> Agree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+										</div>
+									</div>
+								</div>
+								<div class='place-entry'>
+									<div class='place-img-section'>
+										<img src='test_imgs/place.png'/>
+										<input type='checkbox'><span> Add this to group archive </span>
+									</div>
+									<div class='place-info-section'>
+										<h1>Category</h1>
+										<h1><b>Name of this place | $$</b></h1>
+										<div class='place-reviews'>
+											<img src='test_imgs/rating.png'>
+											<span>XXXX reviews</span>
+										</div>
+										<h2>University District | some keywords</h2>
+										<div class='place-agreement-info'>
+											<div class='place-disagrees'>
+												<h2><b> Disagree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+											<div class='place-agrees'>
+												<h2><b> Agree: </b></h2>
+												<div class='img-list'></div>
+											</div>
+										</div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div><!--
+					--><div id="right">
+						<h1 class='column-label'>Messages</h1>
+						<div class='radio-options'>
+							<input type='radio' name='place-list'>
+							<label>Show Chat</label>
+							<input type='radio' name='place-list'>
+							<label>Show Pings</label>
+						</div>
+						<div class='column-content'>
+							<div id='load-more'>Scroll up to Load More Messages</div>
+							<div id='msg-list'>
+							</div>
+						</div>
+						<div>
+							<textarea rows='1' class='input-chat' placeholder='Message the group or mention a member (e.g. @JohnD)'></textarea>
+						</div>
+					</div>
+				</div>
+				<div id='bot-bar'>
+					<div class='bar-content' style='margin-top: 10px'>
+						<div style='width: 330px; padding: 0 25px 0 25px; font-size: 15px;'> 
+							Team ComeTogether, 2018
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>
