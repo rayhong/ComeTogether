@@ -900,6 +900,13 @@ a {
 	display: inline-block;
 }
 
+#load-more-places{
+	text-align: center;
+	padding: 5px 0 15px 0;
+	font-size: 15px;
+	color: #D8D8D8;
+}
+
 #SCR_MAIN #right{
 	text-align: left;
 	color: black;
@@ -990,6 +997,32 @@ a {
 	resize: none;
 	overflow: hidden;
 }
+
+.ping-entry{
+	width: 360px;
+	padding: 10px 0 10px 0;
+	border-top: solid 1px #D8D8D8;
+	border-bottom: solid 1px #D8D8D8;
+}
+
+.ping-text-section{
+	display: inline-block;
+	width: 310px;
+}
+
+.ping-text-section h1{
+	font-size: 15px;
+	font-weight: normal;
+	margin: 0;
+	margin-bottom: 5px;
+}
+
+.nothing-msg {
+	width: 360px;
+	text-align: center;
+	color: #D8D8D8;
+}
+
 
 ::-webkit-scrollbar {
     width: 8px;

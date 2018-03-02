@@ -108,6 +108,20 @@ $(document).ready(function(){
 			}
 		}
 	})
+
+	// Change view from chat to pings, and back
+	$('input[type=radio][name=msgs-list]').change(function(){
+		if(this.value === 'chat'){
+			$('#chat-container').show()
+			$('.input-chat').show()
+			$('#ping-container').hide()
+		}else if(this.value === 'ping'){
+			$('#chat-container').hide()
+			$('.input-chat').hide()
+			$('#ping-container').show()
+		}
+	})
+
 })
 
 function highlightMention(msg){
@@ -139,6 +153,37 @@ function highlightMention(msg){
 		msg = msg.slice(endIndex, msg.length);
 	}
 	return result + msg
+}
+
+
+// PINGS
+// [todo] make so change in database
+function acceptPing(category, option){
+	if(category === 'top'){
+		var topData = option.split('_')
+
+		// trigger click on relevant category
+		$('#top-type-' + topData[0] + ' #top-group-' + topData[1] + ' .check-box').trigger('click')
+
+		// remove all similar pings
+		$('.ping' + '-' + category + '-' + option).remove(); 
+		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
+			$('#right > .column-content').css('overflow-y', 'hidden')
+	}else if(category === 'price'){
+		var target = $('#top-handle')
+		var newPosition = 1 + 26*(4-option)
+		if(userCDQ.price.min.length > option){
+			target = $('#bot-handle')
+			newPosition += 26
+		}
+
+		changePriceDisplay(target, newPosition)
+
+		// remove all similar pings
+		$('.ping' + '-' + category + '-' + option).remove(); 
+		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
+			$('#right > .column-content').css('overflow-y', 'hidden')
+	}
 }
 
 /*

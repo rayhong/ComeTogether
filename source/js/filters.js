@@ -1,18 +1,18 @@
 $(document).ready(function(){
 	// clear or fill the list of objects user agrees with
 	// update agreement display accordingly
-	$('#place-no-pref').change(function(){
+	$('#top-no-pref').change(function(){
 		var change = 0;
 		if(this.checked){
 			$('.check-box').css('fill', '#F0F0F0')
-			updatePlaceAgreementAll(1, false);
-			socket.emit('place change all', {change: 1})
-			userCDQ.place = false;
+			updateTopAgreementAll(1, false);
+			socket.emit('top change all', {change: 1})
+			userCDQ.top = false;
 		}else{
 			$('.check-box').css('fill', '#FFF')
-			updatePlaceAgreementAll(-1, false);
-			socket.emit('place change all', {change: -1})
-			userCDQ.place = []
+			updateTopAgreementAll(-1, false);
+			socket.emit('top change all', {change: -1})
+			userCDQ.top = []
 		}
 	})
 
@@ -42,6 +42,7 @@ $(document).ready(function(){
 					newPosition = 131
 				// if its a new position, update display to show changes and update local objects
 				if($dragging.attr('y') != newPosition){
+					var oldRating = 0;
 					if($('#rating-no-pref').is(':checked')){
 						$('#rating-no-pref').prop('checked', false)
 						$('#rating-sel-area').css('fill', '#AEC7E8')
@@ -50,123 +51,23 @@ $(document).ready(function(){
 						ratingAgreements[5]--;
 						updateRatingAgreement(5, userCDQ.rating)
 					}else{
+						oldRating = userCDQ.rating
 						updateRatingAgreement(userCDQ.rating, 4 - ((newPosition - 1)/26 - 1))
 						userCDQ.rating = 4 - ((newPosition - 1)/26 - 1)
 					}
 					$('#rating-sel-area').attr('height', (minToRatingIndex(userCDQ.rating)+1)*26)
 					socket.emit('rating change', userCDQ.rating)
 					$dragging.attr('y', newPosition)
+
+					if(oldRating > userCDQ.rating)
+						getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: userCDQ.rating}, reviews: userCDQ.reviews})
+					else
+						removeLocations({rating: userCDQ.rating})
 				}
         	}else if(($dragging.attr('id') === 'top-handle') || ($dragging.attr('id') === 'bot-handle')){
-        		// if its the top handle moving and the new location does not overlap with the bottom handle
-				if($dragging.attr('id') === 'top-handle' && $('#bot-handle').attr('y') > newPosition){
-					if(newPosition < 1)
-						newPosition = 1
-					// if its a new position, update display to show changes and update local objects
-					if($dragging.attr('y') != newPosition){
-						var oldMax;
-						if($('#price-no-pref').is(':checked')){
-							$('#price-no-pref').prop('checked', false);
-							$('#price-sel-area').css('fill', '#AEC7E8')
-							$('#price-sel-area-agreed').css('fill', '#1F77B5')
-							userCDQ.price = {min: '$', max: priceIndexToString((newPosition-1)/26)}
-							$dragging.attr('y', newPosition)
-							for(i = 0; i < 4; i++)
-								priceAgreements[i]++
-							priceAgreements[4]--
-							oldMax = '$$$$';
-						}else{
-							oldMax = userCDQ.price.max
-							userCDQ.price.max = priceIndexToString((newPosition-1)/26)
-							$dragging.attr('y', newPosition)
-						}
-						$('#price-sel-area').attr('height', $('#price-sel-area').attr('height') - (newPosition + 5 - $('#price-sel-area').attr('y')))		
-						$('#price-sel-area').attr('y', newPosition + 5)
-						socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
-						updatePriceAgreement(true, oldMax, userCDQ.price.max)
-					}
-        		// if its the bottom handle moving and the new location does not overlap with the top handle
-				}else if($dragging.attr('id') === 'bot-handle' && $('#top-handle').attr('y') < newPosition){
-					if(newPosition > 105)
-						newPosition = 105
-					// if its a new position, update display to show changes and update local objects
-					if($dragging.attr('y') != newPosition){
-						var oldMin;
-						if($('#price-no-pref').is(':checked')){
-							$('#price-no-pref').prop('checked', false);
-							$('#price-sel-area').css('fill', '#AEC7E8')
-							$('#price-sel-area-agreed').css('fill', '#1F77B5')
-							userCDQ.price = {min: priceIndexToString((newPosition-1)/26 - 1), max: '$$$$'}
-							$dragging.attr('y', newPosition)
-							for(i = 0; i < 4; i++)
-								priceAgreements[i]++
-							priceAgreements[4]--
-							oldMin = '$'
-						}else{
-							oldMin = userCDQ.price.min
-							userCDQ.price.min = priceIndexToString((newPosition-1)/26 - 1)
-							$dragging.attr('y', newPosition)
-						}
-						$('#price-sel-area').attr('height', newPosition + 5 - $('#price-sel-area').attr('y'))
-						socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
-						updatePriceAgreement(false, oldMin, userCDQ.price.min)
-					}
-				}
+        		changePriceDisplay($dragging, newPosition)
 			}else{
-				// if its the top handle moving and the new location does not overlap with the bottom handle
-				if($dragging.attr('id') === 'review-top-handle' && $('#review-bot-handle').attr('y') > newPosition){
-					if(newPosition < 1)
-						newPosition = 1
-					// if its a new position, update display to show changes and update local objects
-					if($dragging.attr('y') != newPosition){
-						var oldMax;
-						if($('#review-no-pref').is(':checked')){
-							$('#review-no-pref').prop('checked', false);
-							$('#review-sel-area').css('fill', '#AEC7E8')
-							$('#review-sel-area-agreed').css('fill', '#1F77B5')
-							userCDQ.reviews = {min: 0, max: indexToReview((newPosition-1)/26)}
-							$dragging.attr('y', newPosition)
-							for(i = 0; i < 5; i++)
-								reviewAgreements[i]++
-							reviewAgreements[5]--
-							oldMax = 1001;
-						}else{
-							oldMax = userCDQ.reviews.max
-							userCDQ.reviews.max = indexToReview((newPosition-1)/26)
-							$dragging.attr('y', newPosition)
-						}
-						$('#review-sel-area').attr('height', $('#review-sel-area').attr('height') - (newPosition + 5 - $('#review-sel-area').attr('y')))		
-						$('#review-sel-area').attr('y', newPosition + 5)
-						socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
-						updateReviewAgreement(true, oldMax, userCDQ.reviews.max)
-					}
-        		// if its the bottom handle moving and the new location does not overlap with the top handle
-				}else if($dragging.attr('id') === 'review-bot-handle' && $('#review-top-handle').attr('y') < newPosition){
-					if(newPosition > 131)
-						newPosition = 131
-					// if its a new position, update display to show changes and update local objects
-					if($dragging.attr('y') != newPosition){
-						var oldMin;
-						if($('#review-no-pref').is(':checked')){
-							$('#review-no-pref').prop('checked', false);
-							$('#review-sel-area').css('fill', '#AEC7E8')
-							$('#review-sel-area-agreed').css('fill', '#1F77B5')
-							userCDQ.reviews = {min: indexToReview((newPosition-1)/26), max: 1001}
-							$dragging.attr('y', newPosition)
-							for(i = 0; i < 5; i++)
-								reviewAgreements[i]++
-							reviewAgreements[5]--
-							oldMin = 0
-						}else{
-							oldMin = userCDQ.reviews.min
-							userCDQ.reviews.min = indexToReview((newPosition-1)/26)
-							$dragging.attr('y', newPosition)
-						}
-						$('#review-sel-area').attr('height', newPosition + 5 - $('#review-sel-area').attr('y'))
-						socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
-						updateReviewAgreement(false, oldMin, userCDQ.reviews.min)
-					}
-				}
+				changeReviewDisplay($dragging, newPosition)
 			}
 	    }
     });
@@ -183,56 +84,7 @@ $(document).ready(function(){
 		else
 			target = $('#bot-handle')
 
-		if(target.attr('id') === 'top-handle' && $('#bot-handle').attr('y') > newPosition){
-			if(newPosition < 1)
-				newPosition = 1
-			if(target.attr('y') != newPosition){
-				var oldMax;
-				if($('#price-no-pref').is(':checked')){
-					$('#price-no-pref').prop('checked', false);
-					$('#price-sel-area').css('fill', '#AEC7E8')
-					$('#price-sel-area-agreed').css('fill', '#1F77B5')
-					userCDQ.price = {max: priceIndexToString((newPosition-1)/26), min: '$'}
-					target.attr('y', newPosition)
-					for(i = 0; i < 4; i++)
-						priceAgreements[i]++
-					priceAgreements[4]--
-					oldMax = '$$$$'
-				}else{
-					oldMax = userCDQ.price.max
-					userCDQ.price.max = priceIndexToString((newPosition-1)/26)
-					target.attr('y', newPosition)
-				}
-				$('#price-sel-area').attr('height', $('#price-sel-area').attr('height') - (newPosition + 5 - $('#price-sel-area').attr('y')))		
-				$('#price-sel-area').attr('y', newPosition + 5)
-				socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
-				updatePriceAgreement(true, oldMax, userCDQ.price.max)
-			}
-		}else if(target.attr('id') === 'bot-handle' && $('#top-handle').attr('y') < newPosition){
-			if(newPosition > 105)
-				newPosition = 105
-			if(target.attr('y') != newPosition){
-				var oldMin;
-				if($('#price-no-pref').is(':checked')){
-					$('#price-no-pref').prop('checked', false);
-					$('#price-sel-area').css('fill', '#AEC7E8')
-					$('#price-sel-area-agreed').css('fill', '#1F77B5')
-					userCDQ.price = {min: priceIndexToString((newPosition-1)/26 - 1), max: '$$$$'}
-					target.attr('y', newPosition)
-					for(i = 0; i < 4; i++)
-						priceAgreements[i]++
-					priceAgreements[4]--
-					oldMin = '$'
-				}else{
-					oldMin = userCDQ.price.min
-					userCDQ.price.min = priceIndexToString((newPosition-1)/26 - 1)
-					target.attr('y', newPosition)
-				}
-				$('#price-sel-area').attr('height', newPosition + 5 - $('#price-sel-area').attr('y'))
-				socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
-				updatePriceAgreement(false, oldMin, userCDQ.price.min)
-			}
-		}
+		changePriceDisplay(target, newPosition)
     })
 
     // if user click on slider area of ratings
@@ -245,6 +97,7 @@ $(document).ready(function(){
 			else if(newPosition > 131)
 				newPosition = 131
 
+			var oldRating = 0;
 			if($('#rating-no-pref').is(':checked')){
 				$('#rating-no-pref').prop('checked', false)
 				$('#rating-sel-area').css('fill', '#AEC7E8')
@@ -253,12 +106,17 @@ $(document).ready(function(){
 				ratingAgreements[5]--;
 				updateRatingAgreement(5, userCDQ.rating)
 			}else{
+				oldRating = userCDQ.rating
 				updateRatingAgreement(userCDQ.rating, 4 - ((newPosition - 1)/26 - 1))
 				userCDQ.rating = 4 - ((newPosition - 1)/26 - 1)
 			}
 			$('#rating-sel-area').attr('height', (minToRatingIndex(userCDQ.rating)+1)*26)
 			socket.emit('rating change', userCDQ.rating)
 			$('#rating-handle').attr('y', newPosition)
+			if(oldRating > userCDQ.rating)
+				getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: userCDQ.rating}, reviews: userCDQ.reviews})
+			else
+				removeLocations({rating: userCDQ.rating})
 		}
     })
 
@@ -273,60 +131,7 @@ $(document).ready(function(){
 		else
 			target = $('#review-bot-handle')
 
-		// if its the top handle moving and the new location does not overlap with the bottom handle
-		if(target.attr('id') === 'review-top-handle' && $('#review-bot-handle').attr('y') > newPosition){
-			if(newPosition < 1)
-				newPosition = 1
-			// if its a new position, update display to show changes and update local objects
-			if(target.attr('y') != newPosition){
-				var oldMax;
-				if($('#review-no-pref').is(':checked')){
-					$('#review-no-pref').prop('checked', false);
-					$('#review-sel-area').css('fill', '#AEC7E8')
-					$('#review-sel-area-agreed').css('fill', '#1F77B5')
-					userCDQ.reviews = {min: 0, max: indexToReview((newPosition-1)/26)}
-					target.attr('y', newPosition)
-					for(i = 0; i < 5; i++)
-						reviewAgreements[i]++
-					reviewAgreements[5]--
-					oldMax = 1001;
-				}else{
-					oldMax = userCDQ.reviews.max
-					userCDQ.reviews.max = indexToReview((newPosition-1)/26)
-					target.attr('y', newPosition)
-				}
-				$('#review-sel-area').attr('height', $('#review-sel-area').attr('height') - (newPosition + 5 - $('#review-sel-area').attr('y')))		
-				$('#review-sel-area').attr('y', newPosition + 5)
-				socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
-				updateReviewAgreement(true, oldMax, userCDQ.reviews.max)
-			}
-		// if its the bottom handle moving and the new location does not overlap with the top handle
-		}else if(target.attr('id') === 'review-bot-handle' && $('#review-top-handle').attr('y') < newPosition){
-			if(newPosition > 131)
-				newPosition = 131
-			// if its a new position, update display to show changes and update local objects
-			if(target.attr('y') != newPosition){
-				var oldMin;
-				if($('#review-no-pref').is(':checked')){
-					$('#review-no-pref').prop('checked', false);
-					$('#review-sel-area').css('fill', '#AEC7E8')
-					$('#review-sel-area-agreed').css('fill', '#1F77B5')
-					userCDQ.reviews = {min: indexToReview((newPosition-1)/26), max: 1001}
-					target.attr('y', newPosition)
-					for(i = 0; i < 5; i++)
-						reviewAgreements[i]++
-					reviewAgreements[5]--
-					oldMin = 0
-				}else{
-					oldMin = userCDQ.reviews.min
-					userCDQ.reviews.min = indexToReview((newPosition-1)/26)
-					target.attr('y', newPosition)
-				}
-				$('#review-sel-area').attr('height', newPosition + 5 - $('#review-sel-area').attr('y'))
-				socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
-				updateReviewAgreement(false, oldMin, userCDQ.reviews.min)
-			}
-		}
+		changeReviewDisplay(target, newPosition)
 	})
 
     // if user checks, set user's selected price range to be the whole range
@@ -363,6 +168,8 @@ $(document).ready(function(){
 			updatePriceAgreement(true)
 			socket.emit('price change', {noPref: true})
     		userCDQ.price = false
+    		placesList = []
+    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
     	}else{
 			$('#price-sel-area').css('fill', '#AEC7E8')
 			$('#price-sel-area-agreed').css('fill', '#1F77B5')
@@ -379,6 +186,7 @@ $(document).ready(function(){
     // update display and local objects accordingly
     $('#rating-no-pref').change(function(){
     	if(this.checked){
+    		var oldRating = userCDQ.rating
     		$('#rating-sel-area').css('fill', '#D8D8D8');
     		$('#rating-handle').attr('y', 1 + 26*5)
     		$('#rating-sel-area-agreed').css('fill', '#D8D8D8')
@@ -389,6 +197,7 @@ $(document).ready(function(){
     		updateRatingAgreement(-1)
     		socket.emit('rating change', -1)
     		userCDQ.rating = -1
+    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: 0}, reviews: userCDQ.reviews})
     	}else{
     		$('#rating-sel-area').css('fill', '#AEC7E8')
 			$('#rating-sel-area-agreed').css('fill', '#1F77B5')
@@ -435,6 +244,8 @@ $(document).ready(function(){
 			updateReviewAgreement(true, 0, 0)
 			socket.emit('review change', {noPref: true})
     		userCDQ.reviews = false
+    		placesList = []
+    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
     	}else{
 			$('#review-sel-area').css('fill', '#AEC7E8')
 			$('#review-sel-area-agreed').css('fill', '#1F77B5')
@@ -447,34 +258,36 @@ $(document).ready(function(){
     	}
     })
 
-    // if user checked, show the place preferences of all the members in the group
+    // if user checked, show the top preferences of all the members in the group
     // else, hide the preferences and display concise information
-    $('#place-show-all').change(function(){
+    $('#top-show-all').change(function(){
     	var name;
-    	var locCategories = Object.keys(placeAgreements)
+    	var locCategories = Object.keys(topAgreements)
     	if(this.checked){
     		for(var i = 0; i < locCategories.length - 1; i++){
     			var category = locCategories[i]
-    			var todKeyList = Object.keys(placeAgreements[category])
-    			for(var j = 0; j < todKeyList.length; j++){
-    				var tod = todKeyList[j]
-    				if((placeAgreements[category][tod] + placeAgreements.notCare) != groupSize){
-		    			$('#place-group-' + tod + ' > #right-rect').addClass('show-all-rect')
-		    			$('#place-group-' + tod + ' > #right-text').css({opacity: '0', transition: '0.2s'})
-		    			$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '1')
+    			var topKeyList = Object.keys(topAgreements[category])
+    			for(var j = 0; j < topKeyList.length; j++){
+    				var top = topKeyList[j]
+    				if((topAgreements[category][top] + topAgreements.notCare) != groupSize){
+		    			$('#top-group-' + top + ' > #right-rect').addClass('show-all-rect')
+		    			$('#top-group-' + top + ' > #right-text').css({opacity: '0', transition: '0.2s'})
+		    			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '1')
+ 				   		$('#top-group-' + top + ' .test-ping').css('cursor', 'pointer')
     				}
     			}
     		}
     	}else{
     		for(var i = 0; i < locCategories.length - 1; i++){
     			var category = locCategories[i]
-    			var todKeyList = Object.keys(placeAgreements[category])
-    			for(var j = 0; j < todKeyList.length; j++){
-    				var tod = todKeyList[j]
-	    			if((placeAgreements[category][tod] + placeAgreements.notCare) != groupSize){
-		    			$('#place-group-' + tod + ' > #right-rect').removeClass('show-all-rect')
-		    			$('#place-group-' + tod + ' > #right-text').css({opacity: '1', transition: '0.2s'})
-		    			$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '0')
+    			var topKeyList = Object.keys(topAgreements[category])
+    			for(var j = 0; j < topKeyList.length; j++){
+    				var top = topKeyList[j]
+	    			if((topAgreements[category][top] + topAgreements.notCare) != groupSize){
+		    			$('#top-group-' + top + ' > #right-rect').removeClass('show-all-rect')
+		    			$('#top-group-' + top + ' > #right-text').css({opacity: '1', transition: '0.2s'})
+		    			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '0')
+ 				   		$('#top-group-' + top + ' .test-ping').css('cursor', 'default')
 		    		}
 		    	}
     		}
@@ -488,14 +301,18 @@ $(document).ready(function(){
     		for(i = 0; i < priceAgreements.length - 1; i++){
     			$('#right-rect-price-' + i).addClass('show-all-rect')
     			$('#right-text-price-' + i).css({opacity: '0', transition: '0.2s'})
+    			if(i <= stringToPriceIndex(userCDQ.price.min) && i >= stringToPriceIndex(userCDQ.price.max))
+    				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'pointer')
     		}
     		$('#price-members-sel').css('opacity', '1')
+
     	}else{
     		for(i = 0; i < priceAgreements.length - 1; i++){
     			$('#right-rect-price-' + i).removeClass('show-all-rect')
     			$('#right-text-price-' + i).css('opacity', '1')
     		}
     		$('#price-members-sel').css('opacity', '0')
+    		$('#price-members-sel .test-ping').css('cursor', 'auto')
     	}
     })
 
@@ -514,177 +331,296 @@ $(document).ready(function(){
     	}
     })
 
-    $('#place-show-categories').change(function(){
+    $('#top-show-categories').change(function(){
     	if(this.checked){
-			var locCategories = Object.keys(placeAgreements)
+			var locCategories = Object.keys(topAgreements)
+			var totalAdded = 0;
 			var added = 0;
 			for(i = 0; i < locCategories.length - 1; i++){
 				var category = locCategories[i]
-				if(added > 0){
-					if($('#place-type-' + category).attr('transform'))
-						$('#place-type-' + category).attr('transform', $('#place-type-' + category).attr('transform') + ' translate(0, ' + added*26 + ')')
+				if(added > 0 || totalAdded > 0){
+					totalAdded += added;
+					if($('#top-type-' + category).attr('transform'))
+						$('#top-type-' + category).attr('transform', $('#top-type-' + category).attr('transform') + ' translate(0, ' + totalAdded*26 + ')')
 					else
-						$('#place-type-' + category).attr('transform', 'translate(0, ' + added*26 + ')')
+						$('#top-type-' + category).attr('transform', 'translate(0, ' + totalAdded*26 + ')')
 					added = 0;
 				}
-				var todKeyList = Object.keys(placeAgreements[category])
-				for(j = 0; j < todKeyList.length; j++){
-					var tod = todKeyList[j]
-					if(placeAgreements[category][tod] == 0){
-						$('#place-group-' + tod).css('opacity', 1)
+				var topKeyList = Object.keys(topAgreements[category])
+				for(j = 0; j < topKeyList.length; j++){
+					var top = topKeyList[j]
+					if(topAgreements[category][top] == 0){
+						$('#top-group-' + top).css('opacity', 1)
 						added++;
 					}else if(added > 0){
-						$('#place-group-' + tod).attr('transform', '')
+						$('#top-group-' + top).attr('transform', '')
 					}
 				}
 				if(added > 0){
-					$('#place-type-'+category+' > #place-type-label').attr('height', added*26 + $('#place-type-'+category+' > #place-type-label').attr('height')/1)
-					$('#place-disagreed-border').attr('height', added*26 + $('#place-disagreed-border').attr('height')/1)
-					$('#places-svg').attr('height', added*26 + $('#places-svg').height()/1)
+					$('#top-type-'+category+' > #top-type-label').attr('height', added*26 + $('#top-type-'+category+' > #top-type-label').attr('height')/1)
+					$('#top-type-'+category+' .category-label').show()
+					$('#top-disagreed-border').attr('height', added*26 + $('#top-disagreed-border').attr('height')/1)
+					$('#top-svg').attr('height', added*26 + $('#top-svg').height()/1)
 				}
 			}
 		}else{
-			clearDisagreedPlaces()
+			clearDisagreedTop()
 		}
 	})
 })
 
 // updates the display of the members' individual preferences and agreements 
-// for the given place option
-function updatePlaceAgreement(category, tod){
-	if((placeAgreements[category][tod] + placeAgreements.notCare) == groupSize){
-		if($('#place-show-all').is(':checked')){
-			$('#place-group-' + tod + ' > #right-rect').removeClass('show-all-rect')
-			$('#place-group-' + tod + ' > #right-text').css({opacity: '1', transition: '0.2s'})
-			$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '0')
+// for the given top option
+function updateTopAgreement(category, top){
+	if((topAgreements[category][top] + topAgreements.notCare) == groupSize){
+		if($('#top-show-all').is(':checked')){
+			$('#top-group-' + top + ' > #right-rect').removeClass('show-all-rect')
+			$('#top-group-' + top + ' > #right-text').css({opacity: '1', transition: '0.2s'})
+			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '0')
 		}
-		$('#place-group-' + tod + ' > #left-rect').addClass('agreed-rect')
-		$('#place-group-' + tod + ' > #right-rect').addClass('agreed-rect')
-		$('#place-group-' + tod + ' > #inner-border').css('opacity', 1)
-		$('#place-group-' + tod + ' > #left-text').removeClass('category-text').addClass('agreed-text')
-		$('#place-group-' + tod + ' > #right-text').removeClass('agreement-text').addClass('agreed-text').html('Yes!')
-		if(userCDQ.place !== false){
-			if(userCDQ.place.indexOf(category + "_" + tod) != -1)
-				$('#place-group-' + tod + ' > .check-box').css('fill', '#1F77B5')
+		$('#top-group-' + top + ' > #left-rect').addClass('agreed-rect')
+		$('#top-group-' + top + ' > #right-rect').addClass('agreed-rect')
+		$('#top-group-' + top + ' > #inner-border').css('opacity', 1)
+		$('#top-group-' + top + ' > #left-text').removeClass('category-text').addClass('agreed-text')
+		$('#top-group-' + top + ' > #right-text').removeClass('agreement-text').addClass('agreed-text').html('Yes!')
+		if(userCDQ.top !== false){
+			if(userCDQ.top.indexOf(category + "_" + top) != -1)
+				$('#top-group-' + top + ' > .check-box').css('fill', '#1F77B5')
 			else
-				$('#place-group-' + tod + ' > .check-box').css('fill', '#FFF')
+				$('#top-group-' + top + ' > .check-box').css('fill', '#FFF')
 		}
 	}else{
-		if($('#place-show-all').is(':checked')){
-			$('#place-group-' + tod + ' > #right-rect').addClass('show-all-rect')
-			$('#place-group-' + tod + ' > #right-text').css({opacity: '0', transition: '0.2s'})
-			$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '1')
+		if($('#top-show-all').is(':checked')){
+			$('#top-group-' + top + ' > #right-rect').addClass('show-all-rect')
+			$('#top-group-' + top + ' > #right-text').css({opacity: '0', transition: '0.2s'})
+			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '1')
 		}
-		$('#place-group-' + tod + ' > #left-rect').removeClass('agreed-rect')
-		$('#place-group-' + tod + ' > #right-rect').removeClass('agreed-rect')
-		$('#place-group-' + tod + ' > #inner-border').css('opacity', 0)
-		$('#place-group-' + tod + ' > #left-text').removeClass('agreed-text').addClass('category-text')
-		$('#place-group-' + tod + ' > #right-text').removeClass('agreed-text').addClass('agreement-text').html(`No ${groupSize > 2 ? '(' + (placeAgreements[category][tod] + placeAgreements.notCare) + '/' + groupSize + ')' : ''}`)	
-		if(userCDQ.place !== false){
-			if(userCDQ.place.indexOf(category + "_" + tod) != -1)
-				$('#place-group-' + tod + ' > .check-box').css('fill', '#AEC7E8')
+		$('#top-group-' + top + ' > #left-rect').removeClass('agreed-rect')
+		$('#top-group-' + top + ' > #right-rect').removeClass('agreed-rect')
+		$('#top-group-' + top + ' > #inner-border').css('opacity', 0)
+		$('#top-group-' + top + ' > #left-text').removeClass('agreed-text').addClass('category-text')
+		$('#top-group-' + top + ' > #right-text').removeClass('agreed-text').addClass('agreement-text').html(`No ${groupSize > 2 ? '(' + (topAgreements[category][top] + topAgreements.notCare) + '/' + groupSize + ')' : ''}`)	
+		if(userCDQ.top !== false){
+			if(userCDQ.top.indexOf(category + "_" + top) != -1)
+				$('#top-group-' + top + ' > .check-box').css('fill', '#AEC7E8')
 			else
-				$('#place-group-' + tod + ' > .check-box').css('fill', '#FFF')
+				$('#top-group-' + top + ' > .check-box').css('fill', '#FFF')
 		}
 	}
-	if(placesAgreed > 0){
-		$('#place-disagreed-border').css('opacity', 0)
-		$('#place-label').css('color', '#000')
-		$('#places-svg text').removeClass('disagreed-text')
-		$('#places-svg .agreement-rect').removeClass('disagreed-rect')
+	if(topAgreed > 0){
+		$('#top-disagreed-border').css('opacity', 0)
+		$('#top-label').css('color', '#000')
+		$('#top-svg text').removeClass('disagreed-text')
+		$('#top-svg .agreement-rect').removeClass('disagreed-rect')
 	}else{
-		$('#place-disagreed-border').css('opacity', 1)
-		$('#place-label').css('color', '#f00')
-		$('#places-svg text').addClass('disagreed-text')
-		$('#places-svg .agreement-rect').addClass('disagreed-rect')
+		$('#top-disagreed-border').css('opacity', 1)
+		$('#top-label').css('color', '#f00')
+		$('#top-svg text').addClass('disagreed-text')
+		$('#top-svg .agreement-rect').addClass('disagreed-rect')
 	}
 }
 
-// updates the display of members' individual preferences and agreements of all place options
+// updates the display of members' individual preferences and agreements of all top options
 // it also increments or decreases the number of agreements for the global objects
-function updatePlaceAgreementAll(change, memberID){
-	var locCategories = Object.keys(placeAgreements)
+function updateTopAgreementAll(change, memberID){
+	var locCategories = Object.keys(topAgreements)
 	var needClear = false;
 	if(change > 0)
-		placeAgreements.notCare++
+		topAgreements.notCare++
 	else if(change < 0)
-		placeAgreements.notCare--
-	placesAgreed = 0;
+		topAgreements.notCare--
+	topAgreed = 0;
 	for(i = 0; i < locCategories.length - 1; i++){
 		var category = locCategories[i]
-		var todKeyList = Object.keys(placeAgreements[category])
-		for(j = 0; j < todKeyList.length; j++){
-			var tod = todKeyList[j]
-			var todId = category + "_" + tod
+		var topKeyList = Object.keys(topAgreements[category])
+		for(j = 0; j < topKeyList.length; j++){
+			var top = topKeyList[j]
+			var topId = category + "_" + top
 			if(change > 0){
-				if((memberID && members[memberID].place.indexOf(todId) != -1) ||
-					(!memberID && userCDQ.place.indexOf(todId) != -1)){
-					placeAgreements[category][tod]--
-					if(placeAgreements[category][tod] == 0)
+				if((memberID && members[memberID].top.indexOf(topId) != -1) ||
+					(!memberID && userCDQ.top.indexOf(topId) != -1)){
+					topAgreements[category][top]--
+					if(topAgreements[category][top] == 0)
 						needClear = true;
 				}
 			}
 
 			if(memberID){
-				if(change >= 0)
-					$('#place-group-' + tod + ' > .place-members-sel rect:nth-child(' + memberID + ')').css('opacity', 1)
-				else
-					$('#place-group-' + tod + ' > .place-members-sel rect:nth-child(' + memberID + ')').css('opacity', 0)
-			}
-
-			if((placeAgreements[category][tod] + placeAgreements.notCare) == groupSize){
-				placesAgreed++;
-				if($('#place-show-all').is(':checked')){
-					$('#place-group-' + tod + ' > #right-rect').removeClass('show-all-rect')
-					$('#place-group-' + tod + ' > #right-text').css({opacity: '1', transition: '0.2s'})
-					$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '0')
-				}
-				$('#place-group-' + tod + ' > #left-rect').addClass('agreed-rect')
-				$('#place-group-' + tod + ' > #right-rect').addClass('agreed-rect')
-				$('#place-group-' + tod + ' > #inner-border').css('opacity', 1)
-				$('#place-group-' + tod+ ' > #left-text').removeClass('category-text').addClass('agreed-text')
-				$('#place-group-' + tod + ' > #right-text').removeClass('agreement-text').addClass('agreed-text').html('Yes!')
-				if(userCDQ.place !== false && memberID){
-					if(userCDQ.place.indexOf(todId) != -1)
-						$('#place-group-' + tod + ' > .check-box').css('fill', '#1F77B5')
-					else
-						$('#place-group-' + tod + ' > .check-box').css('fill', '#FFF')
+				if(change >= 0){
+					$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberID-1) + ')').css('opacity', 1)
+					$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberID) + ')').css('opacity', 0)
+				}else{
+					$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberID-1) + ')').css('opacity', 0)
+					if(userCDQ.top.includes(topId))
+						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberID) + ')').css('opacity', 1)
 				}
 			}else{
-				if($('#place-show-all').is(':checked')){
-					$('#place-group-' + tod + ' > #right-rect').addClass('show-all-rect')
-					$('#place-group-' + tod + ' > #right-text').css({opacity: '0', transition: '0.2s'})
-					$('#place-group-' + tod + ' > .place-members-sel').css('opacity', '1')
+				if(change > 0){
+					for(k = 1; k < members.length; k++){
+						var member = members[k]
+						var isSelected = !member.top || member.top.includes(topId)
+						if(!isSelected)
+							$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*k) + ')').css('opacity', 1)
+					}
+				}else{
+					for(k = 1; k < members.length; k++){
+						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*k) + ')').css('opacity', 0)
+					}
 				}
-				$('#place-group-' + tod + ' > #left-rect').removeClass('agreed-rect')
-				$('#place-group-' + tod + ' > #right-rect').removeClass('agreed-rect')
-				$('#place-group-' + tod + ' > #inner-border').css('opacity', 0)
-				$('#place-group-' + tod + ' > #left-text').removeClass('agreed-text').addClass('category-text')
-				$('#place-group-' + tod + ' > #right-text').removeClass('agreed-text').addClass('agreement-text').html(`No ${groupSize > 2 ? '(' + (placeAgreements[category][tod] + placeAgreements.notCare) + '/' + groupSize + ')' : ''}`)
-				if(userCDQ.place !== false && memberID){
-					if(userCDQ.place.indexOf(todId) != -1)
-						$('#place-group-' + tod + ' > .check-box').css('fill', '#AEC7E8')
+			}
+
+			if((topAgreements[category][top] + topAgreements.notCare) == groupSize){
+				topAgreed++;
+				if($('#top-show-all').is(':checked')){
+					$('#top-group-' + top + ' > #right-rect').removeClass('show-all-rect')
+					$('#top-group-' + top + ' > #right-text').css({opacity: '1', transition: '0.2s'})
+					$('#top-group-' + top + ' > .top-members-sel').css('opacity', '0')
+				}
+				$('#top-group-' + top + ' > #left-rect').addClass('agreed-rect')
+				$('#top-group-' + top + ' > #right-rect').addClass('agreed-rect')
+				$('#top-group-' + top + ' > #inner-border').css('opacity', 1)
+				$('#top-group-' + top+ ' > #left-text').removeClass('category-text').addClass('agreed-text')
+				$('#top-group-' + top + ' > #right-text').removeClass('agreement-text').addClass('agreed-text').html('Yes!')
+				if(userCDQ.top !== false && memberID){
+					if(userCDQ.top.indexOf(topId) != -1)
+						$('#top-group-' + top + ' > .check-box').css('fill', '#1F77B5')
 					else
-						$('#place-group-' + tod + ' > .check-box').css('fill', '#FFF')
+						$('#top-group-' + top + ' > .check-box').css('fill', '#FFF')
+				}
+			}else{
+				if($('#top-show-all').is(':checked')){
+					$('#top-group-' + top + ' > #right-rect').addClass('show-all-rect')
+					$('#top-group-' + top + ' > #right-text').css({opacity: '0', transition: '0.2s'})
+					$('#top-group-' + top + ' > .top-members-sel').css('opacity', '1')
+				}
+				$('#top-group-' + top + ' > #left-rect').removeClass('agreed-rect')
+				$('#top-group-' + top + ' > #right-rect').removeClass('agreed-rect')
+				$('#top-group-' + top + ' > #inner-border').css('opacity', 0)
+				$('#top-group-' + top + ' > #left-text').removeClass('agreed-text').addClass('category-text')
+				$('#top-group-' + top + ' > #right-text').removeClass('agreed-text').addClass('agreement-text').html(`No ${groupSize > 2 ? '(' + (topAgreements[category][top] + topAgreements.notCare) + '/' + groupSize + ')' : ''}`)
+				if(userCDQ.top !== false && memberID){
+					if(userCDQ.top.indexOf(topId) != -1)
+						$('#top-group-' + top + ' > .check-box').css('fill', '#AEC7E8')
+					else
+						$('#top-group-' + top + ' > .check-box').css('fill', '#FFF')
 				}
 			}
 		}
 	}
 
-	if(placesAgreed > 0){
-		$('#place-disagreed-border').css('opacity', 0)
-		$('#place-label').css('color', '#000')
-		$('#places-svg text').removeClass('disagreed-text')
-		$('#places-svg .agreement-rect').removeClass('disagreed-rect')
+	if(topAgreed > 0){
+		$('#top-disagreed-border').css('opacity', 0)
+		$('#top-label').css('color', '#000')
+		$('#top-svg text').removeClass('disagreed-text')
+		$('#top-svg .agreement-rect').removeClass('disagreed-rect')
 	}else{
-		$('#place-disagreed-border').css('opacity', 1)
-		$('#place-label').css('color', '#f00')
-		$('#places-svg text').addClass('disagreed-text')
-		$('#places-svg .agreement-rect').addClass('disagreed-rect')
+		$('#top-disagreed-border').css('opacity', 1)
+		$('#top-label').css('color', '#f00')
+		$('#top-svg text').addClass('disagreed-text')
+		$('#top-svg .agreement-rect').addClass('disagreed-rect')
 	}
 
 	if(needClear)
-		clearDisagreedPlaces();
+		clearDisagreedTop();
+}
+
+// changes the display of price sliders and agreement 
+function changePriceDisplay(target, newPosition){
+	if(target.attr('id') === 'top-handle' && $('#bot-handle').attr('y') > newPosition){
+		if(newPosition < 1)
+			newPosition = 1
+		// if its a new position, update display to show changes and update local objects
+		if(target.attr('y') != newPosition){
+			var oldMax;
+			if($('#price-no-pref').is(':checked')){
+				$('#price-no-pref').prop('checked', false);
+				$('#price-sel-area').css('fill', '#AEC7E8')
+				$('#price-sel-area-agreed').css('fill', '#1F77B5')
+				userCDQ.price = {min: '$', max: priceIndexToString((newPosition-1)/26)}
+				target.attr('y', newPosition)
+				for(i = 0; i < 4; i++)
+					priceAgreements[i]++
+				priceAgreements[4]--
+				oldMax = '$$$$';
+			}else{
+				oldMax = userCDQ.price.max
+				userCDQ.price.max = priceIndexToString((newPosition-1)/26)
+				target.attr('y', newPosition)
+			}
+			$('#price-sel-area').attr('height', $('#price-sel-area').attr('height') - (newPosition + 5 - $('#price-sel-area').attr('y')))		
+			$('#price-sel-area').attr('y', newPosition + 5)
+			socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
+			updatePriceAgreement(true, oldMax, userCDQ.price.max)
+
+			if(userCDQ.price.max.length > oldMax.length){
+				if(userCDQ.price.max.length - oldMax.length > 1)
+					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.max, min: oldMax + '$'}, 
+								  rating: userCDQ.rating, reviews: userCDQ.reviews})
+				else
+					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.max, min: userCDQ.price.max}, 
+								  rating: userCDQ.rating, reviews: userCDQ.reviews})
+			}else{
+				if(oldMax.length - userCDQ.price.max.length > 1)
+					removeLocations({price: {max: oldMax, min: userCDQ.price.max + '$'}})
+				else
+					removeLocations({price: {max: oldMax, min: oldMax}})
+			}
+		}
+	// if its the bottom handle moving and the new location does not overlap with the top handle
+	}else if(target.attr('id') === 'bot-handle' && $('#top-handle').attr('y') < newPosition){
+		if(newPosition > 105)
+			newPosition = 105
+		// if its a new position, update display to show changes and update local objects
+		if(target.attr('y') != newPosition){
+			var oldMin;
+			if($('#price-no-pref').is(':checked')){
+				$('#price-no-pref').prop('checked', false);
+				$('#price-sel-area').css('fill', '#AEC7E8')
+				$('#price-sel-area-agreed').css('fill', '#1F77B5')
+				userCDQ.price = {min: priceIndexToString((newPosition-1)/26 - 1), max: '$$$$'}
+				target.attr('y', newPosition)
+				for(i = 0; i < 4; i++)
+					priceAgreements[i]++
+				priceAgreements[4]--
+				oldMin = '$'
+			}else{
+				oldMin = userCDQ.price.min
+				userCDQ.price.min = priceIndexToString((newPosition-1)/26 - 1)
+				target.attr('y', newPosition)
+			}
+			$('#price-sel-area').attr('height', newPosition + 5 - $('#price-sel-area').attr('y'))
+			socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
+			updatePriceAgreement(false, oldMin, userCDQ.price.min)
+
+			if(userCDQ.price.min.length < oldMin.length){
+				if(oldMin.length - userCDQ.price.min.length > 1)
+					getLocations({topList: userCDQ.top, price: {max: oldMin.slice(1), min: userCDQ.price.min}, 
+								  rating: userCDQ.rating, reviews: userCDQ.reviews})
+				else
+					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.min, min: userCDQ.price.min}, 
+								  rating: userCDQ.rating, reviews: userCDQ.reviews})
+			}else{
+				if(userCDQ.price.min.length - oldMin.length > 1)
+					removeLocations({price: {max: userCDQ.price.min.slice(1), min: oldMin}})
+				else
+					removeLocations({price: {max: oldMin, min: oldMin}})
+			}
+		}
+	}
+
+	var minIndex = stringToPriceIndex(userCDQ.price.min)
+	var maxIndex = stringToPriceIndex(userCDQ.price.max)
+	for(var i = 0; i < 4; i++){
+		if(i <= minIndex && i >= maxIndex){
+			$('[id^=ping-price-' + (4-i) + ']').css('opacity', 1)
+			if($('#price-show-all').is(':checked'))
+				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'pointer')
+		}else{
+			$('[id^=ping-price-' + (4-i) + ']').css('opacity', 0)
+			if($('#price-show-all').is(':checked'))
+				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'auto')
+		}
+	}
 }
 
 // updates the display of the agreement area for the price range category
@@ -817,6 +753,78 @@ function updateRatingAgreement(oldRating, newRating){
 	}
 }
 
+
+function changeReviewDisplay(target, newPosition){
+	// if its the top handle moving and the new location does not overlap with the bottom handle
+	if(target.attr('id') === 'review-top-handle' && $('#review-bot-handle').attr('y') > newPosition){
+		if(newPosition < 1)
+			newPosition = 1
+		// if its a new position, update display to show changes and update local objects
+		if(target.attr('y') != newPosition){
+			var oldMax;
+			if($('#review-no-pref').is(':checked')){
+				$('#review-no-pref').prop('checked', false);
+				$('#review-sel-area').css('fill', '#AEC7E8')
+				$('#review-sel-area-agreed').css('fill', '#1F77B5')
+				userCDQ.reviews = {min: 0, max: indexToReview((newPosition-1)/26)}
+				target.attr('y', newPosition)
+				for(i = 0; i < 5; i++)
+					reviewAgreements[i]++
+				reviewAgreements[5]--
+				oldMax = 1001;
+			}else{
+				oldMax = userCDQ.reviews.max
+				userCDQ.reviews.max = indexToReview((newPosition-1)/26)
+				target.attr('y', newPosition)
+			}
+			$('#review-sel-area').attr('height', $('#review-sel-area').attr('height') - (newPosition + 5 - $('#review-sel-area').attr('y')))		
+			$('#review-sel-area').attr('y', newPosition + 5)
+			socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
+			updateReviewAgreement(true, oldMax, userCDQ.reviews.max)
+
+			if(userCDQ.reviews.max > oldMax){
+				getLocations({topList: userCDQ.top, price: userCDQ.price, 
+							  rating: userCDQ.rating, reviews: {max: userCDQ.reviews.max, min: oldMax + 1}})
+			}else{
+				removeLocations({reviews: {max: oldMax, min: userCDQ.reviews.max + 1}})
+			}
+		}
+	// if its the bottom handle moving and the new location does not overlap with the top handle
+	}else if(target.attr('id') === 'review-bot-handle' && $('#review-top-handle').attr('y') < newPosition){
+		if(newPosition > 131)
+			newPosition = 131
+		// if its a new position, update display to show changes and update local objects
+		if(target.attr('y') != newPosition){
+			var oldMin;
+			if($('#review-no-pref').is(':checked')){
+				$('#review-no-pref').prop('checked', false);
+				$('#review-sel-area').css('fill', '#AEC7E8')
+				$('#review-sel-area-agreed').css('fill', '#1F77B5')
+				userCDQ.reviews = {min: indexToReview((newPosition-1)/26), max: 1001}
+				target.attr('y', newPosition)
+				for(i = 0; i < 5; i++)
+					reviewAgreements[i]++
+				reviewAgreements[5]--
+				oldMin = 0
+			}else{
+				oldMin = userCDQ.reviews.min
+				userCDQ.reviews.min = indexToReview((newPosition-1)/26)
+				target.attr('y', newPosition)
+			}
+			$('#review-sel-area').attr('height', newPosition + 5 - $('#review-sel-area').attr('y'))
+			socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
+			updateReviewAgreement(false, oldMin, userCDQ.reviews.min)
+
+			if(userCDQ.reviews.min < oldMin){
+				getLocations({topList: userCDQ.top, price: userCDQ.price, 
+							  rating: userCDQ.rating, reviews: {max: oldMin - 1, min: userCDQ.reviews.min}})
+			}else{
+				removeLocations({reviews: {max: userCDQ.reviews.min - 1, min: oldMin}})
+			}
+		}
+	}
+}
+
 function updateReviewAgreement(isTop, oldReview, newReview){
 	var oldIndex = reviewToIndex(oldReview)
 	var newIndex = reviewToIndex(newReview)
@@ -889,39 +897,45 @@ function updateReviewAgreement(isTop, oldReview, newReview){
 	}
 }
 
-function clearDisagreedPlaces(){
-	if(!$('#place-show-categories').is(':checked')){
-		var locCategories = Object.keys(placeAgreements)
+function clearDisagreedTop(){
+	if(!$('#top-show-categories').is(':checked')){
+		var locCategories = Object.keys(topAgreements)
+		var totalRemoved = 0;
 		var removed = 0;
 		for(var i = 0; i < locCategories.length - 1; i++){
 			var category = locCategories[i]
-			if(removed > 0){
-				if($('#place-type-' + category).attr('transform'))
-					$('#place-type-' + category).attr('transform', $('#place-type-' + category).attr('transform') + ' translate(0, ' + (-1*removed*26) + ')')
+			if(removed > 0 || totalRemoved > 0){
+				totalRemoved += removed;
+				if($('#top-type-' + category).attr('transform'))
+					$('#top-type-' + category).attr('transform', $('#top-type-' + category).attr('transform') + ' translate(0, ' + (-1*totalRemoved*26) + ')')
 				else
-					$('#place-type-' + category).attr('transform', 'translate(0, ' + (-1*removed*26) + ')')
+					$('#top-type-' + category).attr('transform', 'translate(0, ' + (-1*totalRemoved*26) + ')')
 				removed = 0;
 			}
-			var todKeyList = Object.keys(placeAgreements[category])
-			for(var j = 0; j < todKeyList.length; j++){
-				var tod = todKeyList[j]
-				if(placeAgreements[category][tod] == 0){
-					if($('#place-group-' + tod).css('opacity') == 1){
-						$('#place-group-' + tod).css('opacity', 0)
-						$('#place-group-' + tod).attr('transform', '')
+			var topKeyList = Object.keys(topAgreements[category])
+			for(var j = 0; j < topKeyList.length; j++){
+				var top = topKeyList[j]
+				if(topAgreements[category][top] == 0){
+					if($('#top-group-' + top).css('opacity') == 1){
+						$('#top-group-' + top).css('opacity', 0)
+						$('#top-group-' + top).attr('transform', '')
 						removed++;
 					}
 				}else if(removed > 0){
-					if($('#place-group-' + tod).attr('transform'))
-						$('#place-group-' + tod).attr('transform', $('#place-group-' + tod).attr('transform') + ' translate(0, ' + (-1*removed*26) + ')')
+					if($('#top-group-' + top).attr('transform'))
+						$('#top-group-' + top).attr('transform', $('#top-group-' + top).attr('transform') + ' translate(0, ' + (-1*removed*26) + ')')
 					else
-						$('#place-group-' + tod).attr('transform', 'translate(0, ' + (-1*removed*26) + ')')
+						$('#top-group-' + top).attr('transform', 'translate(0, ' + (-1*removed*26) + ')')
 				}
 			}
 			if(removed > 0){
-				$('#place-type-'+category+' > #place-type-label').attr('height', $('#place-type-'+category+' > #place-type-label').attr('height') - removed*26)
-				$('#places-svg').attr('height', $('#places-svg').height() - removed*26)
-				$('#place-disagreed-border').attr('height', $('#place-disagreed-border').attr('height') - removed*26)
+				$('#top-type-'+category+' > #top-type-label').attr('height', $('#top-type-'+category+' > #top-type-label').attr('height') - removed*26)
+				if($('#top-type-'+category+' > #top-type-label').attr('height') == 0)
+					$('#top-type-'+category+' .category-label').hide()
+				else if($('#top-type-'+category+' > #top-type-label').attr('height') == 26)
+					$('#top-type-'+category+' .category-label:nth-child(3)').hide()
+				$('#top-svg').attr('height', $('#top-svg').height() - removed*26)
+				$('#top-disagreed-border').attr('height', $('#top-disagreed-border').attr('height') - removed*26)
 			}
 		}
 	}

@@ -46,24 +46,24 @@
 						<div class='column-content'>
 							<div class="criteria">
 								<div style='display: inline-block; width: 160px'>
-									<span id='place-label' class="subject-label">
+									<span id='top-label' class="subject-label">
 										Place Categories
 									</span>
-									<img id='collapse-place' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
+									<img id='collapse-top' class="collapse" src="test_imgs/collapse.png" data-collapsed='false'/>
 								</div><!--
 								--><span id='you-label'> You </span><!--
 								--><span id='all-agreed-label'> All agreed? </span>
-								<div id='places-svg-container'></div>
+								<div id='top-svg-container'></div>
 								<div class='option-select'>
-									<input id='place-no-pref' type='checkbox' checked>
+									<input id='top-no-pref' type='checkbox' checked>
 									<span> I don't have preferences on this criterion </span>
 								</div>
 								<div class='option-select'>
-									<input id='place-show-all' type='checkbox'>
+									<input id='top-show-all' type='checkbox'>
 									<span> Show everyone's preference </span>
 								</div>
 								<div class='option-select'>
-									<input id='place-show-categories' type='checkbox'>
+									<input id='top-show-categories' type='checkbox'>
 									<span> Show every category </span>
 								</div>
 							</div>
@@ -228,152 +228,34 @@
 					--><div id="middle">
 						<h1 class='column-label'>Places</h1>
 						<div class='radio-options'>
-							<input type='radio' name='place-list'>
-							<label>Show places matching my filter <b>(XX places)</b></label>
-							<input type='radio' name='place-list'>
-							<label>Show places in group archive <b>(XX places)</b></label>
+							<input type='radio' name='place-list' id='ego-radio' value='personal' checked>
+							<label for='ego-radio'>Show places matching my filter <b id='num-ego-cen'>(0 places)</b></label>
+							<!--<input type='radio' name='place-list' id='archive-radio' value='archive'>
+							<label for='archive-radio'>Show places in group archive <b>(XX places)</b></label>-->
 						</div>
 						<div class='column-content'>
 							<div id='places-list'>
-								<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/place2.png'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>Category</h1>
-										<h1><b>Name of this place | $$</b></h1>
-										<div class='place-reviews'>
-											<img src='test_imgs/rating.png'>
-											<span>XXXX reviews</span>
-										</div>
-										<h2>University District | some keywords</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/place.png'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>Category</h1>
-										<h1><b>Name of this place | $$</b></h1>
-										<div class='place-reviews'>
-											<img src='test_imgs/rating.png'>
-											<span>XXXX reviews</span>
-										</div>
-										<h2>University District | some keywords</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/place.png'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>Category</h1>
-										<h1><b>Name of this place | $$</b></h1>
-										<div class='place-reviews'>
-											<img src='test_imgs/rating.png'>
-											<span>XXXX reviews</span>
-										</div>
-										<h2>University District | some keywords</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/place.png'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>Category</h1>
-										<h1><b>Name of this place | $$</b></h1>
-										<div class='place-reviews'>
-											<img src='test_imgs/rating.png'>
-											<span>XXXX reviews</span>
-										</div>
-										<h2>University District | some keywords</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-										</div>
-									</div>
-								</div>
-								<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/place.png'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>Category</h1>
-										<h1><b>Name of this place | $$</b></h1>
-										<div class='place-reviews'>
-											<img src='test_imgs/rating.png'>
-											<span>XXXX reviews</span>
-										</div>
-										<h2>University District | some keywords</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'></div>
-											</div>
-										</div>
-									</div>
-								</div>
 							</div>
+							<div id='load-more-places'> Scroll down to Load More Places </div>
 						</div>
 					</div><!--
 					--><div id="right">
 						<h1 class='column-label'>Messages</h1>
 						<div class='radio-options'>
-							<input type='radio' name='place-list'>
-							<label>Show Chat</label>
-							<input type='radio' name='place-list'>
-							<label>Show Pings</label>
+							<input type='radio' name='msgs-list' id='chat-radio' value='chat' checked>
+							<label for='chat-radio'>Show Chat</label>
+							<input type='radio' name='msgs-list' id='ping-radio' value='ping'>
+							<label for='ping-radio'>Show Pings</label>
 						</div>
 						<div class='column-content'>
-							<div id='load-more'>Scroll up to Load More Messages</div>
-							<div id='msg-list'>
+							<div id='chat-container'>
+								<div class='nothing-msg'> You have received no messages </div>
+								<div id='load-more'>Scroll up to Load More Messages</div>
+								<div id='msg-list'>
+								</div>
+							</div>
+							<div id='ping-container' hidden>
+								<div class='nothing-msg'> You have received no pings </div>
 							</div>
 						</div>
 						<div>
