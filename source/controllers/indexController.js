@@ -2,7 +2,7 @@
 var multer = require('multer');
 var path = require('path');
 var fs = require('fs');
-var bcrypt = require('bcrypt');
+var bcrypt = require('bcryptjs');
 
 // export controller to app.js
 module.exports = function(app, con){
