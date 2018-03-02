@@ -51,6 +51,8 @@ $.ajax({
 						$("#input_officeadd").prop("readonly", false)
 						$("#check_officeadd").attr("checked", false)
 					}
+
+					/*
 					$.ajax({
 						type: "GET",
 						url: "/get_group_info",
@@ -83,6 +85,7 @@ $.ajax({
 							}
 						}
 					})
+					*/
 				}
 			})
 

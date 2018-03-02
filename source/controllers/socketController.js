@@ -20,20 +20,20 @@ module.exports = function(server, con){
 			socket.broadcast.to(socket.groupID).emit('new member', {id: socket.userID, firstname: data.firstname, lastname: data.lastname, filename: data.filename, groupID: socket.groupID})
 		})
 
-		socket.on('place change', function(data){
-			socket.broadcast.to(socket.groupID).emit('place change', {id: socket.userID, todId: data.todId, change: data.change})
+		socket.on('top change', function(data){
+			socket.broadcast.to(socket.groupID).emit('top change', {id: socket.userID, topId: data.topId, change: data.change})
 			var sql;
 			if(data.change > 0)
-				sql = `UPDATE groups SET g_cdq=JSON_ARRAY_APPEND(g_cdq, 'xxxx.top', ${con.escape(data.todId)}) WHERE g_id=${con.escape(socket.groupID)}`
+				sql = `UPDATE groups SET g_cdq=JSON_ARRAY_APPEND(g_cdq, 'xxxx.top', ${con.escape(data.topId)}) WHERE g_id=${con.escape(socket.groupID)}`
 			else
 				sql = `UPDATE groups SET g_cdq=JSON_REMOVE(g_cdq, 
-						TRIM(BOTH '"' FROM JSON_SEARCH(g_cdq, 'one', ${con.escape(data.todId)}, NULL, 'xxxx.top'))) 
+						TRIM(BOTH '"' FROM JSON_SEARCH(g_cdq, 'one', ${con.escape(data.topId)}, NULL, 'xxxx.top'))) 
 						WHERE g_id=${con.escape(socket.groupID)}`
 			getPathAndQuery(sql, socket, con)
 		})
 
-		socket.on('place change all', function(data){
-			socket.broadcast.to(socket.groupID).emit('place change all', {id: socket.userID, change: data.change})
+		socket.on('top change all', function(data){
+			socket.broadcast.to(socket.groupID).emit('top change all', {id: socket.userID, change: data.change})
 			var sql;
 			if(data.change > 0)
 				sql = `UPDATE groups SET g_cdq=JSON_SET(g_cdq, 'xxxx.top_init', false, 'xxxx.top', JSON_ARRAY()) WHERE g_id=${con.escape(socket.groupID)}`
@@ -88,6 +88,26 @@ module.exports = function(server, con){
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
 				socket.broadcast.to(socket.groupID).emit('new message', {id: socket.userID, msg: msg, groupID: socket.groupID});			
+			})
+		})
+
+		socket.on('new ping', function(data){
+			// cdq_action: 'top': id, 'price': '$', 'rating': '4', 'reviews': 1000
+			// for the ranges: make the other user reach the range
+			var cdqActionStr;
+			if(data.category === 'top')
+				cdqActionStr = `'top', ${con.escape(data.option)}`
+			else if(data.category === 'price')
+				cdqActionStr = `'price', ${con.escape(data.option)}`
+
+			var sql = `UPDATE groups SET g_ping_log=JSON_ARRAY_APPEND(g_ping_log, '$.data', 
+					   JSON_OBJECT('from', ${con.escape(socket.userID)}, 'to', ${con.escape(data.id)}, 'timestamp', CURRENT_TIMESTAMP, 
+					               'accepted', null, 'notified', false, 'cdq_action', JSON_OBJECT(${cdqActionStr}))) 
+					   WHERE g_id=${con.escape(socket.groupID)}`
+					   
+			con.query(sql, function(err, result){
+				if (err) console.log(err);
+				socket.broadcast.to(socket.groupID).emit('new ping', {senderID: socket.userID, receiverID: data.id, category: data.category, option: data.option})
 			})
 		})
 

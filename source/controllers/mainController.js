@@ -59,7 +59,7 @@ module.exports = function(app, con){
 
 					var alreadyAdded = false
 					var group = []
-					var user = {place: false, price: false, rating: -1, reviews: false, id: req.session.userID,
+					var user = {top: false, price: false, rating: -1, reviews: false, id: req.session.userID,
 								firstname: members[req.session.userID].firstname, lastname: members[req.session.userID].lastname,
 								filename: members[req.session.userID].filename,}
 					for(i = 0; i < cdqData.length; i++){
@@ -68,7 +68,7 @@ module.exports = function(app, con){
 						if(cdqEntry.user_id == req.session.userID){
 							alreadyAdded = true;
 							if(cdqEntry.top_init)
-								user.place = cdqEntry.top
+								user.top = cdqEntry.top
 							if(cdqEntry.price_init)
 								user.price = cdqEntry.price
 							if(cdqEntry.rating_init)
@@ -76,9 +76,9 @@ module.exports = function(app, con){
 							if(cdqEntry.reviews_init)
 								user.reviews = cdqEntry.reviews
 						}else{
-							var temp = {place: false, price: false, rating: -1, reviews: false}
+							var temp = {top: false, price: false, rating: -1, reviews: false}
 							if(cdqEntry.top_init)
-								temp.place = cdqEntry.top
+								temp.top = cdqEntry.top
 							if(cdqEntry.price_init)
 								temp.price = cdqEntry.price
 							if(cdqEntry.rating_init)
@@ -114,10 +114,10 @@ module.exports = function(app, con){
 
 	// client sends the current index of the msg it got
 	app.get("/get_msgs", function(req, res){
-		var group_id = req.session.groupID
-		if(group_id){
+		var groupID = req.session.groupID
+		if(groupID){
 			var current_index = req.query.current_index;
-			var sql = `SELECT g_chat_log->'$.data' FROM groups WHERE g_id='${group_id}'`
+			var sql = `SELECT g_chat_log->'$.data' FROM groups WHERE g_id=${con.escape(groupID)}`
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
 				var chatLog = JSON.parse(result[0]["g_chat_log->'$.data'"]);
@@ -131,6 +131,51 @@ module.exports = function(app, con){
 					newIndex = current_index - 20
 				var result = chatLog.slice(newIndex, current_index)
 				res.send([result, newIndex]);
+			})
+		}
+	})
+
+	app.post('/get_places', function(req, res){
+		var data = req.body
+		var sql = `SELECT p_top, p_data FROM places WHERE `
+		if(data.topList){
+			var strList = '(' + con.escape(data.topList[0])
+			for(i = 1; i < data.topList.length; i++){
+				strList += ', ' + con.escape(data.topList[i])
+			}
+			strList += ')'
+			sql += `p_top IN ${strList} AND `
+		}
+		sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
+				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating.min)} AND `
+		if(data.rating.max != 5)
+			sql += `CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) < ${con.escape(data.rating.max)} AND `
+
+		sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
+		if(data.reviews.max != 1001)
+			sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
+
+		con.query(sql, function(err,result){
+			if(err) 
+				console.log(err);
+			else{
+				var placesList = result.map(function(entry){
+					var entryData = JSON.parse(entry.p_data).data
+					return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
+							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address}
+				})
+				res.send(placesList)
+			}
+		})
+	})
+
+	app.get("/get_pings", function(req, res){
+		var groupID = req.session.groupID
+		if(groupID){
+			var sql = `SELECT g_ping_log->'$.data' FROM groups WHERE g_id=${con.escape(groupID)}`
+			con.query(sql, function(err, result){
+				if (err) console.log(err);
+				res.send(JSON.parse(result[0]["g_ping_log->'$.data'"]))
 			})
 		}
 	})

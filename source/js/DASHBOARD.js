@@ -93,7 +93,6 @@ $.ajax({
 					})
 
 					socket.on('new message', function(data){
-						console.log('hey')
 						if(!$('#' + data.groupID + ' .num_msgs_cont').is(':visible'))
 							$('#' + data.groupID + ' .num_msgs_cont').show()
 						var numMsgs = parseInt($('#' + data.groupID + ' .num_msgs_cont .num_msgs').html())
