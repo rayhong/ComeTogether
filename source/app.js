@@ -82,32 +82,52 @@ function getTimestamp(){
 }
 
 
+/*
+ [To add more places data to database]
+var fs = require('fs')
+var path = require('path')
 
-/* [To add more places data to database]
-// res_fr, res_in, res_it, res_jp, res_med, res_mx, res_aerican, res_th, res_veg, res_vet, res_cn, caf_caf, caf_bubble, caf_juice, caf_des, caf_ice, attr_aq, attr_landmark, attr_muse
-// bubbletea, cafes, chinese, coffee, coffeeroasteries, desserts, french, gelato, icecream, indpak, italian, japanese, juicebars, mediterranean, mexican,
-// newamerican, thai, tradamerican, vegan, vegetarian, aquariums, landmarks, museums
-// (missing: aquariums, landmarks, museums)
-var data = []
+var locationTypes = [{res_american: ["newamerican", "tradamerican"]}, {res_cn: ["chinese"]}, {res_fr: ["french"]}, {res_in: ["indpak"]}, {res_it: ["italian"]},
+					 {res_jp: ["japanese"]}, {res_mx: ["mexican"]}, {res_med: ["mediterranean"]}, {res_th: ["thai"]}, {res_veg: ["vegan"]}, {res_vet: ["vegetarian"]}, 
+					 {caf_caf: ["cafes", "coffee", "coffeeroasteries"]}, {caf_bubble: ["bubbletea"]}, {caf_tea: ["tea"]}, {caf_juice: ["juicebars"]}, 
+					 {caf_des: ["desserts"]}, {caf_ice: ["icecream", "gelato"]}, 
+					 {attr_landmark: ["landmarks"]}, {attr_muse: ["museums"]}, {attr_aq: ["aquariums"]}, {attr_park: ["parks"]}, {attr_beach: ["beaches"]}, 
+					 {attr_amusepark: ["amusementparks"]}, {attr_zoo: ["zoos"]}, {attr_theater: ["theater"]}, 
+					 {shop_art: ["artsandcrafts"]}, {shop_book: ["bookstores"]}, {shop_cosm: ["cosmetics"]}, {shop_dept: ["deptstores"]}, {shop_drug: ["drugstores"]}, 
+					 {shop_elec: ["electronics"]}, {shop_jewel: ["fashion", "jewelry"]}, {shop_grocery: ["grocery"]}, 
+					 {night_bar: ["bars"]}, {night_beerg: ["beergardens"]}, {night_jazz: ["jazzandblues"]}, {night_karaoke: ["karaoke"]}, 
+					 {night_comedy: ["comedyclubs"]}, {night_music: ["musicvenues"]}, {night_dance: ["danceclubs"]}];
 
-console.log(data.length)
-
-for(i = 0; i < data.length; i++){
-	var sql = `INSERT INTO places (p_mid, p_cid, p_top, p_data) 
-			VALUES ('m_sea', 'c_${data[i].city.toLowerCase().replace(/ /g, "_")}', 'attr_landmark', 
-					JSON_OBJECT('type', 'place', 'data',
-								JSON_OBJECT('yelp', 
-											JSON_OBJECT('id', ${con.escape(data[i].yelpId)}, 'name', ${con.escape(data[i].name)}, 'rating', ${con.escape(data[i].yelpRating)}, 
-														'review_cnt', ${con.escape(data[i].yelpRatingCount)}, 'coord_lat', ${con.escape(data[i].locY)},
-														'coord_lng', ${con.escape(data[i].locX)}, 'phone', ${con.escape(data[i].phone)}, 'address', ${con.escape(data[i].address)},
-														'city', ${con.escape(data[i].city)}, 'zip', ${con.escape(data[i].zip)}, 'yelp_url', ${con.escape(data[i].yelpURL)}, 
-														'yelp_url_mobile', ${con.escape(data[i].yelpURLMobile)}),
-											'google',
-											JSON_OBJECT('rating', ${con.escape(data[i].googleRating)}, 'open_hours', ${con.escape(data[i].openingHours)}, 
-														'images', ${con.escape(data[i].photos)}, 'price', ${con.escape(data[i].priceLevels)},
-														'reviews', ${con.escape(data[i].googleReviews)}))))`
-	con.query(sql, function(err, result){
-		if(err) throw err;
-	})
+for(var i = 0; i < 1; i++){
+	var type = locationTypes[i]
+	var id = Object.keys(type)[0]
+	var filenames = type[id]
+	for(var j = 0; j < 1; j++){
+		var filename = filenames[j]
+		var filePath = path.join(__dirname, "final/" + filename + "Final.txt")
+		fs.readFile(filePath, 'utf8', function(err, data){
+			if(err) throw err;
+			var temp = data.split('\n').pop()
+			var placesInfo = temp.map( placeInfo => JSON.parse(placeInfo))
+			for(var k = 0; k < placesInfo.length; k++){
+				var sql = `INSERT INTO places (p_mid, p_cid, p_top, p_data) 
+						VALUES ('m_sea', 'c_${placesInfo[i].city.toLowerCase().replace(/ /g, "_")}', 'attr_landmark', 
+								JSON_OBJECT('type', 'place', 'data',
+											JSON_OBJECT('yelp', 
+														JSON_OBJECT('id', ${con.escape(placesInfo[i].yelpId)}, 'name', ${con.escape(placesInfo[i].name)}, 'rating', ${con.escape(placesInfo[i].yelpRating)}, 
+																	'review_cnt', ${con.escape(placesInfo[i].yelpRatingCount)}, 'coord_lat', ${con.escape(placesInfo[i].locY)},
+																	'coord_lng', ${con.escape(placesInfo[i].locX)}, 'phone', ${con.escape(placesInfo[i].phone)}, 'address', ${con.escape(placesInfo[i].address)},
+																	'city', ${con.escape(placesInfo[i].city)}, 'zip', ${con.escape(placesInfo[i].zip)}, 'yelp_url', ${con.escape(placesInfo[i].yelpURL)}, 
+																	'yelp_url_mobile', ${con.escape(placesInfo[i].yelpURLMobile)}),
+														'google',
+														JSON_OBJECT('id', ${con.escape(placesInfo[i].placeId)}, 'rating', ${con.escape(placesInfo[i].googleRating)}, 'open_hours', ${con.escape(placesInfo[i].openingHours)}, 
+																	'images', ${con.escape(placesInfo[i].photos)}, 'price', ${con.escape(placesInfo[i].priceLevels)},
+																	'reviews', ${con.escape(placesInfo[i].googleReviews)}))))`
+				con.query(sql, function(err, result){
+					if(err) throw err;
+				})
+			}
+		})
+	}
 }
 */

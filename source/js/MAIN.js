@@ -6,6 +6,8 @@ var groupSize = 1;
 var userCDQ;
 var members;
 
+// checkmark image: +11 of checkmark box x, +6 of box y
+ 
 // top id: type_category | topAgreements[type][category] -> num of agreed
 // night: {bar: 0, beerg: 0, jazz: 0, karaoke: 0, comedy: 0, music: 0, dance: 0},
 var topAgreements = {res: {american: 0, cn: 0, fr: 0, in: 0, it: 0, jp: 0, mx: 0, med: 0, th: 0, veg: 0, vet: 0},
@@ -40,6 +42,10 @@ $(document).ready(function(){
 	$('#top-show-all').prop('checked', false)
 	$('#top-show-categories').prop('checked', false)
 	$('#price-show-all').prop('checked', false)
+
+	$('#ego-radio').prop('checked', true)
+	$('#chat-radio').prop('checked', true)
+
 	$.ajax({
 		url: '/get_group_cdqs',
 		type: 'GET',
@@ -101,6 +107,7 @@ $(document).ready(function(){
 										<text id='right-text' class='agreement-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${j*26 + yPosition + 17}' text-anchor='middle'>No ${groupSize > 2 ? '(' + (topAgreements[category][top] + topAgreements.notCare) + '/' + groupSize + ')' : ''} </text>
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
+										<image href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
 										</g>`
 						}else{
 							topAgreed++;
@@ -112,6 +119,7 @@ $(document).ready(function(){
 										<text id='right-text' class='agreed-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${j*26 + yPosition + 17}' text-anchor='middle'>Yes!</text>
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
+										<image href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
 										</g>`
 						}
 					}else{
@@ -125,6 +133,7 @@ $(document).ready(function(){
 										<text id='right-text' class='agreed-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${j*26 + yPosition + 17}' text-anchor='middle'>Yes!</text>
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
+										<image href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
 										</g>`
 						}else{		
 							endHtml += `<g id='top-group-${top}' style='opacity: 0'>
@@ -135,6 +144,7 @@ $(document).ready(function(){
 										<text id='right-text' class='agreement-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${j*26 + yPosition + 17}' text-anchor='middle'>No ${groupSize > 2 ? '(' + (topAgreements[category][top] + topAgreements.notCare) + '/' + groupSize + ')' : ''} </text>
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
+										<image href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
 										</g>`
 						}
 						notAdded++
@@ -170,7 +180,7 @@ $(document).ready(function(){
 
 			// if user clicks on one of the checkbox for tops
 			// add or remove it from its prefered list of locations, change display accordingly
-			$('.check-box').click(function(){
+			$('.check-box, image').click(function(){
 				var top = $(this).parent().attr('id').slice(10)
 				var category = $(this).parent().parent().attr('id').slice(9)
 				var topList = topAgreements[category]
@@ -186,6 +196,7 @@ $(document).ready(function(){
 					if(topList[top] == 0)
 						clearDisagreedTop();
 
+					$('#top-group-' + top + ' image').css('opacity', 0)
 					for(var i = 1; i < members.length; i++){
 						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*i) + ')').css('opacity', 0)
 					}
@@ -209,6 +220,7 @@ $(document).ready(function(){
 					socket.emit('top change', {topId: topId, change: 1})
 					updateTopAgreement(category, top)
 
+					$('#top-group-' + top + ' image').css('opacity', 1)
 					for(var i = 1; i < members.length; i++){
 						var member = members[i]
 						var isSelected = member.top === false || member.top.indexOf(topId) != -1
@@ -238,6 +250,7 @@ $(document).ready(function(){
 						var top = topKeyList[j]
 						var topId = category + "_" + top
 						if(members[0].top.indexOf(topId) != -1){
+							$('#top-group-' + top + ' image').css('opacity', 1)
 							if(topAgreements[category][top] + topAgreements.notCare == groupSize)
 								$('#top-group-' + top + ' > .check-box').css('fill', '#1F77B5')
 							else
@@ -344,7 +357,8 @@ $(document).ready(function(){
 			$('.test-ping').click(function(){
 				if($(this).css('opacity') === '1' && $(this).parent().css('opacity') === '1'){
 					var data = $(this).attr('id').split('-')
-					data[2] = '$'.repeat(data[2])
+					if(data[1] === 'price')
+						data[2] = '$'.repeat(data[2])
 					console.log('Sending ping to ' + data[3] + ' to choose ' + data[2] + ' in ' + data[1])
 					socket.emit('new ping', {id: data[3], category: data[1], option: data[2]})
 				}
@@ -689,12 +703,12 @@ function getLocations(preferences){
 				var left = entry.rating/1
 				for(j = 0; j < 5; j++){
 					if(left == 0.5){
-						ratingHtml += "<span><img src='test_imgs/half-star.png'></span>"
+						ratingHtml += "<span><img src='img/List_star_0.png'></span>"
 						left -= 0.5
 					}else if(left == 0)
-						ratingHtml += "<span><img src='test_imgs/blank-star.png'></span>"
+						ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
 					else{
-						ratingHtml += "<span><img src='test_imgs/full-star.png'></span>"
+						ratingHtml += "<span><img src='img/List_star_1.png'></span>"
 						left--;
 					}
 
@@ -879,9 +893,39 @@ function getPings(){
 		dataType: 'json',
 		success: function(data){
 			for(var i = 0; i < data.length; i++){
-				if(userCDQ.id === data[i].from || userCDQ.id === data[i].to)
-					pingList.push(data[i])
+				var ping = data[i]
+				if(ping.ping_accepted == null){
+					ping.ping_cdq_action = JSON.parse(ping.ping_cdq_action)
+					var category = Object.keys(ping.ping_cdq_action)[0]
+					var option = ping.ping_cdq_action[category]
+
+					var senderIndex = members.findIndex(member => member.id === ping.ping_from_id)
+
+					var classStr = 'ping-' + category + '-'
+					var descriptionHtml = ''
+					if(category === 'top'){
+						classStr += option
+						descriptionHtml += `<b>${topNames[option.split('_')[1]]}</b> in your <b>Place Categories</b></h1>`
+					}else if(category === 'price'){
+						classStr += option.length
+						descriptionHtml += `<b>${option}</b> in your <b>Price Range</b></h1>`
+					}
+
+					$('#ping-container').append(`<div class='ping-entry ${classStr}' data-sender='${ping.ping_from_id}'>
+													<div class='msg-pic-section'><img src='profile_imgs/${members[senderIndex].filename}' style='border-color:${colors[senderIndex]}'/></div>
+													<div class='ping-text-section'>
+														<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> asked you to include </br>
+														${descriptionHtml}
+														<button class='accept-ping-btn' onclick="acceptPing('${category}', '${option}')">Accept</button>
+														<button class='accept-ping-btn' onclick="rejectPing('${ping.ping_from_id}', '${category}', '${option}')">Reject</button>												
+													</div>
+												</div>`);
+				}
 			}
+			if($('#right > .column-content')[0].scrollHeight > $('#right > .column-content').height())
+				$('#right > .column-content').css('overflow-y', 'scroll')
+			if(data.length > 0)
+				$('#ping-container .nothing-msg').hide()
 		}
 	})
 }

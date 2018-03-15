@@ -288,12 +288,13 @@ $(document).ready(function(){
 				descriptionHtml += `<b>${data.option}</b> in your <b>Price Range</b></h1>`
 			}
 
-			$('#ping-container').append(`<div class='ping-entry ${classStr}'>
+			$('#ping-container').append(`<div class='ping-entry ${classStr}' data-sender='${data.senderID}'>
 											<div class='msg-pic-section'><img src='profile_imgs/${members[senderIndex].filename}' style='border-color:${colors[senderIndex]}'/></div>
 											<div class='ping-text-section'>
 												<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> asked you to include </br>
 												${descriptionHtml}
-												<button class='accept-ping-btn' onclick="acceptPing('${data.category}', '${data.option.length}')">Accept</button>												
+												<button class='accept-ping-btn' onclick="acceptPing('${data.category}', '${data.option}')">Accept</button>	
+												<button class='accept-ping-btn' onclick="rejectPing('${data.senderID}', '${data.category}', '${data.option}')">Reject</button>											
 											</div>
 										</div>`);
 
