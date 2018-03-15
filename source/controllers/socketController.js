@@ -94,20 +94,34 @@ module.exports = function(server, con){
 		socket.on('new ping', function(data){
 			// cdq_action: 'top': id, 'price': '$', 'rating': '4', 'reviews': 1000
 			// for the ranges: make the other user reach the range
-			var cdqActionStr;
-			if(data.category === 'top')
-				cdqActionStr = `'top', ${con.escape(data.option)}`
-			else if(data.category === 'price')
-				cdqActionStr = `'price', ${con.escape(data.option)}`
-
-			var sql = `UPDATE groups SET g_ping_log=JSON_ARRAY_APPEND(g_ping_log, '$.data', 
-					   JSON_OBJECT('from', ${con.escape(socket.userID)}, 'to', ${con.escape(data.id)}, 'timestamp', CURRENT_TIMESTAMP, 
-					               'accepted', null, 'notified', false, 'cdq_action', JSON_OBJECT(${cdqActionStr}))) 
-					   WHERE g_id=${con.escape(socket.groupID)}`
+			var sql = `INSERT INTO pings (ping_g_id, ping_from_id, ping_to_id, ping_notified, ping_cdq_action) SELECT 
+					   ${con.escape(socket.groupID)}, ${con.escape(socket.userID)}, ${con.escape(data.id)}, false, 
+					   JSON_OBJECT(${con.escape(data.category)}, ${con.escape(data.option)}) WHERE NOT EXISTS 
+					   (SELECT id FROM pings WHERE ping_g_id=${con.escape(socket.groupID)} AND ping_from_id=${con.escape(socket.userID)} 
+					   AND ping_to_id=${con.escape(data.id)} AND ping_cdq_action->'$.${data.category}'=${con.escape(data.option)} AND
+					   ping_accepted IS NULL)`
 					   
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
-				socket.broadcast.to(socket.groupID).emit('new ping', {senderID: socket.userID, receiverID: data.id, category: data.category, option: data.option})
+				if(result.affectedRows)
+					socket.broadcast.to(socket.groupID).emit('new ping', {senderID: socket.userID, receiverID: data.id, category: data.category, option: data.option})
+			})
+		})
+
+		socket.on('accept ping', function(data){
+			var sql = `UPDATE pings SET ping_accepted=true WHERE ping_g_id=${con.escape(socket.groupID)} AND ping_to_id=${con.escape(socket.userID)}
+		 			   AND ping_cdq_action->'$.${data.category}'=${con.escape(data.option)} AND ping_accepted IS NULL`
+			con.query(sql, function(err, result){
+				if (err) console.log(err);
+			})
+		})
+
+		socket.on('reject ping', function(data){
+			var sql = `UPDATE pings SET ping_accepted=false WHERE ping_g_id=${con.escape(socket.groupID)} AND ping_to_id=${con.escape(socket.userID)}
+		 			   AND ping_cdq_action->'$.${data.category}'=${con.escape(data.option)} AND ping_from_id=${con.escape(data.senderID)} AND
+		 			   ping_accepted IS NULL`
+			con.query(sql, function(err, result){
+				if (err) console.log(err);
 			})
 		})
 

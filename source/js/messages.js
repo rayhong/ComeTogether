@@ -157,8 +157,9 @@ function highlightMention(msg){
 
 
 // PINGS
-// [todo] make so change in database
 function acceptPing(category, option){
+	socket.emit('accept ping', {category: category, option: option})
+
 	if(category === 'top'){
 		var topData = option.split('_')
 
@@ -166,10 +167,13 @@ function acceptPing(category, option){
 		$('#top-type-' + topData[0] + ' #top-group-' + topData[1] + ' .check-box').trigger('click')
 
 		// remove all similar pings
-		$('.ping' + '-' + category + '-' + option).remove(); 
+		$('.ping-' + category + '-' + option).remove(); 
 		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
 			$('#right > .column-content').css('overflow-y', 'hidden')
+
+
 	}else if(category === 'price'){
+		option = option.length
 		var target = $('#top-handle')
 		var newPosition = 1 + 26*(4-option)
 		if(userCDQ.price.min.length > option){
@@ -180,10 +184,18 @@ function acceptPing(category, option){
 		changePriceDisplay(target, newPosition)
 
 		// remove all similar pings
-		$('.ping' + '-' + category + '-' + option).remove(); 
+		$('.ping-' + category + '-' + option).remove(); 
 		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
 			$('#right > .column-content').css('overflow-y', 'hidden')
 	}
+}
+
+function rejectPing(senderID, category, option){
+	socket.emit('reject ping', {senderID: senderID, category: category, option: option})
+
+	$('.ping-' + category + '-' + option + '[data-sender="' + senderID + '"]').remove(); 
+	if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
+		$('#right > .column-content').css('overflow-y', 'hidden')
 }
 
 /*

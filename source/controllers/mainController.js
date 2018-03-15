@@ -171,11 +171,12 @@ module.exports = function(app, con){
 
 	app.get("/get_pings", function(req, res){
 		var groupID = req.session.groupID
+		var userID = req.session.userID
 		if(groupID){
-			var sql = `SELECT g_ping_log->'$.data' FROM groups WHERE g_id=${con.escape(groupID)}`
+			var sql = `SELECT * FROM pings WHERE ping_g_id=${con.escape(groupID)} AND (ping_from_id=${con.escape(userID)} OR ping_to_id=${con.escape(userID)})`
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
-				res.send(JSON.parse(result[0]["g_ping_log->'$.data'"]))
+				res.send(result)
 			})
 		}
 	})

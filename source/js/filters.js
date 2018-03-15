@@ -323,11 +323,11 @@ $(document).ready(function(){
     	if($(this).data('collapsed')){
     		$('#' + criteriaName + 's-svg-container').slideDown();
     		$(this).data('collapsed', false)
-    		$(this).attr('src', 'test_imgs/collapse.png')
+    		$(this).attr('src', 'img/CDQ_criterion_close@2x.png')
     	}else{
     		$('#' + criteriaName + 's-svg-container').slideUp();
     		$(this).data('collapsed', true)
-    		$(this).attr('src', 'test_imgs/expand.png')
+    		$(this).attr('src', 'img/CDQ_criterion_open@2x.png')
     	}
     })
 
