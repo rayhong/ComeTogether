@@ -1,0 +1,91 @@
+<div id="SCR_SETTINGS">
+	<div id="left">
+		<img src="img/LOGIN_INIT_LOGO.png"/>
+		<div class="moto">Find Places together</div>
+		<div class="screen_info"> 
+			<p> Settings </p>
+			<div>
+				<span class="btn" id="DASHBOARD" style="margin-left:0px;">
+					I'M GOOD NOW
+				</span>
+			</div>
+		</div>
+	</div>
+	<div id="right">
+		<div class="login_heading"> YOUR INFORMATION
+			<div>
+				<span class="label">Your e-mail address</span>
+			</div>
+			<div>
+				<span><input type="text" id="input_email" class="input_text" readonly/></span>
+			</div>
+			<div>
+				<span class="label">Your name</span>
+			</div>
+			<div>
+				<span><input type="text" id="input_first_name" class="input_text input_text_name" placeholder="Your first name" data-changed="false"/></span>
+				<span><input type="text" id="input_last_name" class="input_text input_text_name" placeholder="Your last name" data-changed="false"/></span>
+			</div>
+			<div>
+				<span class="label">Your password</span>
+			</div>
+			<div> 
+				<span><input type="password" id="input_pw" class="input_text" data-verified="false" data-changed="false"/></span>
+			</div>
+			<div>
+				<p id="pw_err" class="valid_error_msg"></p>
+			</div>
+			<div>
+				<span class="label">Your password (confirm)</span>
+			</div>
+			<div> 
+				<span><input type="password" id="input_pwconf" class="input_text" data-verified="false"/></span>
+			</div>
+			<div>
+				<p id="pwconf_err" class="valid_error_msg"></p>
+			</div>
+			<div>
+				<span class="label">Your profile</span>
+			</div>
+			<div id="login_profile">
+				<div id="login_profile_left">
+					<img src="img/profile_default.png" id="profile_pic" width="120" height="120"/>
+				</div>
+				<div id="login_profile_right"> Your friends will rely on your profile image to identify you while searching destinations together. We encourage you to use a picture of yourself that shows you clearly.</div>
+			</div>
+			<!-- hidden input to upload files -->
+			<input type="file" id="img_upload" style="display:none" accept="image/*" data-filled="false" data-changed="false"/>
+			<span class="btn" id="PROFILE_UPLOAD" style="margin-left:0px;">
+				<img src=""/> UPLOAD
+			</span><span id="check_img"></span>
+			<div>
+				<span class="label">Your home address</span>
+			</div>
+			<div>
+				<span><input type="text" id="input_homeadd" class="input_text" placeholder="Your home address" data-changed="false" readonly/></span>
+			</div>
+			<div>
+				<input id="check_homeadd" type="checkbox" name="homeadd" checked/>
+				<label class="check_txt" for="check_homeadd">Do not want to specify</label>
+			</div>
+			<div>
+				<span class="label">Your office address</span>
+			</div>
+			<div>
+				<span><input type="text" id="input_officeadd" class="input_text" placeholder="Your office address" data-changed="false" readonly/></span>
+			</div>
+			<div>
+				<input id="check_officeadd" type="checkbox" name="officeadd" checked/>
+				<label class="check_txt" for="check_officeadd">Do not want to specify</label>
+			</div>
+			<div class="buttons" style="margin-top:10px;">
+				<span class="btn_dis" id="update" style="margin-left:0px;">
+					UPDATE
+				</span>
+			</div>			
+		</div>
+		<!-- <div id="url_list" class="login_heading"> YOUR LINKS 
+		</div> -->
+	</div>
+</div>
+<div class="credit">MCSquared project, 2018</div>

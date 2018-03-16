@@ -1,0 +1,61 @@
+<div id="SCR_EVENT_CREATE_READY">
+	<div id="left">
+		<img src="img/LOGIN_INIT_LOGO.png"/>
+		<div class="moto">Find Places together</div>
+		<div class="description">You are all set. Share the link with your friends</br>to arrange this event together</div>
+	</div>
+	<div id="right">
+		<div class="login_heading"> YOU ARE ALL SET 
+			<div>
+				<div>
+					<span class="info-label">Event Title: </span><span id="event-title"></span>
+				</div>
+				<div>
+					<span class="info-label">Event Date: </span><span id="event-date"></span>
+				</div>
+				<div>
+					<span class="info-label">Event Note: </span><span id="event-note"></span>
+				</div>
+			</div>
+			<div class="buttons" style="margin-top:10px;">
+				<span class="btn" id="EVENT_CREATE">EDIT</span>
+			</div>		
+		</div>
+		<div class="login_heading"> INVITE YOUR FRIENDS
+			<div>
+				<span class="description">
+					Copy and paste the below URL and send it to </br>
+					members who might join the event.
+				</span>
+			</div>
+			<div>
+				<span><input type="text" id="group_url" class="input_text" value="https://urlurlurlrurlrurlrurlul" readonly/></span><!--
+				--><span class="btn" id="copy_url" style="margin-left:0px;">COPY URL</span>
+			</div>
+			<div>
+				<span class="description">
+					You can also add your friends who are already </br> 
+					using this application instead of sending an e-</br>
+					mail. Type your friend's e-mail.
+				</span>
+			</div>
+			<div>
+				<span><input type="text" id="input_email" class="input_text" placeholder="email@email.com"/></span><!--
+				--><span class="btn" id="add_email" style="margin-left:0px;">ADD</span>
+			</div>
+			<div>
+				<span id="email-err-msg" class="description" style="color: #c33; font-size: 12px; display: none"> Please input a valid email address. </span>
+			</div>
+			<div>
+				<span class="description"> Added addresses: </span>
+			</div>
+			<div id="email-list">
+			</div>
+			<div class="buttons" style="margin-top:10px;">
+				<span class="btn" id="EVENT_CREATE_DONE" style="margin-left:0px;">CONFIRM</span>
+				<span class="btn" id="DASHBOARD"><img src="" id=""/> CANCEL</span>
+			</div>		
+		</div>
+	</div>
+</div>
+<div class="credit">MCSquared project, 2018</div>
