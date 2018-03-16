@@ -59,10 +59,7 @@ $(document).ready(function(){
 					socket.emit('rating change', userCDQ.rating)
 					$dragging.attr('y', newPosition)
 
-					if(oldRating > userCDQ.rating)
-						getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: userCDQ.rating}, reviews: userCDQ.reviews})
-					else
-						removeLocations({rating: userCDQ.rating})
+					getLocations()
 				}
         	}else if(($dragging.attr('id') === 'top-handle') || ($dragging.attr('id') === 'bot-handle')){
         		changePriceDisplay($dragging, newPosition)
@@ -113,10 +110,8 @@ $(document).ready(function(){
 			$('#rating-sel-area').attr('height', (minToRatingIndex(userCDQ.rating)+1)*26)
 			socket.emit('rating change', userCDQ.rating)
 			$('#rating-handle').attr('y', newPosition)
-			if(oldRating > userCDQ.rating)
-				getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: userCDQ.rating}, reviews: userCDQ.reviews})
-			else
-				removeLocations({rating: userCDQ.rating})
+
+			getLocations()
 		}
     })
 
@@ -169,7 +164,7 @@ $(document).ready(function(){
 			socket.emit('price change', {noPref: true})
     		userCDQ.price = false
     		placesList = []
-    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
+    		getLocations()
     	}else{
 			$('#price-sel-area').css('fill', '#AEC7E8')
 			$('#price-sel-area-agreed').css('fill', '#1F77B5')
@@ -197,7 +192,7 @@ $(document).ready(function(){
     		updateRatingAgreement(-1)
     		socket.emit('rating change', -1)
     		userCDQ.rating = -1
-    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: {max: oldRating, min: 0}, reviews: userCDQ.reviews})
+    		getLocations()
     	}else{
     		$('#rating-sel-area').css('fill', '#AEC7E8')
 			$('#rating-sel-area-agreed').css('fill', '#1F77B5')
@@ -245,7 +240,7 @@ $(document).ready(function(){
 			socket.emit('review change', {noPref: true})
     		userCDQ.reviews = false
     		placesList = []
-    		getLocations({topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
+    		getLocations()
     	}else{
 			$('#review-sel-area').css('fill', '#AEC7E8')
 			$('#review-sel-area-agreed').css('fill', '#1F77B5')
@@ -552,19 +547,8 @@ function changePriceDisplay(target, newPosition){
 			socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
 			updatePriceAgreement(true, oldMax, userCDQ.price.max)
 
-			if(userCDQ.price.max.length > oldMax.length){
-				if(userCDQ.price.max.length - oldMax.length > 1)
-					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.max, min: oldMax + '$'}, 
-								  rating: userCDQ.rating, reviews: userCDQ.reviews})
-				else
-					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.max, min: userCDQ.price.max}, 
-								  rating: userCDQ.rating, reviews: userCDQ.reviews})
-			}else{
-				if(oldMax.length - userCDQ.price.max.length > 1)
-					removeLocations({price: {max: oldMax, min: userCDQ.price.max + '$'}})
-				else
-					removeLocations({price: {max: oldMax, min: oldMax}})
-			}
+
+			getLocations()
 		}
 	// if its the bottom handle moving and the new location does not overlap with the top handle
 	}else if(target.attr('id') === 'bot-handle' && $('#top-handle').attr('y') < newPosition){
@@ -592,19 +576,7 @@ function changePriceDisplay(target, newPosition){
 			socket.emit('price change', {noPref: false, min: userCDQ.price.min, max: userCDQ.price.max})
 			updatePriceAgreement(false, oldMin, userCDQ.price.min)
 
-			if(userCDQ.price.min.length < oldMin.length){
-				if(oldMin.length - userCDQ.price.min.length > 1)
-					getLocations({topList: userCDQ.top, price: {max: oldMin.slice(1), min: userCDQ.price.min}, 
-								  rating: userCDQ.rating, reviews: userCDQ.reviews})
-				else
-					getLocations({topList: userCDQ.top, price: {max: userCDQ.price.min, min: userCDQ.price.min}, 
-								  rating: userCDQ.rating, reviews: userCDQ.reviews})
-			}else{
-				if(userCDQ.price.min.length - oldMin.length > 1)
-					removeLocations({price: {max: userCDQ.price.min.slice(1), min: oldMin}})
-				else
-					removeLocations({price: {max: oldMin, min: oldMin}})
-			}
+			getLocations();
 		}
 	}
 
@@ -782,12 +754,7 @@ function changeReviewDisplay(target, newPosition){
 			socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
 			updateReviewAgreement(true, oldMax, userCDQ.reviews.max)
 
-			if(userCDQ.reviews.max > oldMax){
-				getLocations({topList: userCDQ.top, price: userCDQ.price, 
-							  rating: userCDQ.rating, reviews: {max: userCDQ.reviews.max, min: oldMax + 1}})
-			}else{
-				removeLocations({reviews: {max: oldMax, min: userCDQ.reviews.max + 1}})
-			}
+			getLocations()
 		}
 	// if its the bottom handle moving and the new location does not overlap with the top handle
 	}else if(target.attr('id') === 'review-bot-handle' && $('#review-top-handle').attr('y') < newPosition){
@@ -815,12 +782,7 @@ function changeReviewDisplay(target, newPosition){
 			socket.emit('review change', {noPref: false, min: userCDQ.reviews.min, max: userCDQ.reviews.max})
 			updateReviewAgreement(false, oldMin, userCDQ.reviews.min)
 
-			if(userCDQ.reviews.min < oldMin){
-				getLocations({topList: userCDQ.top, price: userCDQ.price, 
-							  rating: userCDQ.rating, reviews: {max: oldMin - 1, min: userCDQ.reviews.min}})
-			}else{
-				removeLocations({reviews: {max: userCDQ.reviews.min - 1, min: oldMin}})
-			}
+			getLocations()
 		}
 	}
 }

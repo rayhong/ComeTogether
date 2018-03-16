@@ -83,7 +83,7 @@ function getTimestamp(){
 
 
 /*
- [To add more places data to database]
+ [Script: To add more places data to database]
 var fs = require('fs')
 var path = require('path')
 

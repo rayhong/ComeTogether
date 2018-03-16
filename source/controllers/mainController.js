@@ -147,9 +147,7 @@ module.exports = function(app, con){
 			sql += `p_top IN ${strList} AND `
 		}
 		sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
-				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating.min)} AND `
-		if(data.rating.max != 5)
-			sql += `CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) < ${con.escape(data.rating.max)} AND `
+				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating)} AND `
 
 		sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
 		if(data.reviews.max != 1001)
