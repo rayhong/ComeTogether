@@ -36,6 +36,8 @@ var pingList = []
 var inputHeight = 29;
 var currentMsgIndex;
 
+var numQueued = 0;
+
 var socket = io();
 
 $(document).ready(function(){
@@ -201,7 +203,7 @@ $(document).ready(function(){
 						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*i) + ')').css('opacity', 0)
 					}
 
-					removeLocations({top: topId})
+					getLocations()
 				}else{
 					if($('#top-no-pref').is(":checked")){
 						$('.check-box').css('fill', '#FFF')
@@ -228,7 +230,7 @@ $(document).ready(function(){
 							$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*i) + ')').css('opacity', 1)
 					}
 
-					getLocations({topList: [topId], price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
+					getLocations()
 				}
 			})
 
@@ -470,7 +472,7 @@ $(document).ready(function(){
 			}
 
 			// PLACE LIST: get data, store data and display
-			getLocations({topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews})
+			getLocations()
 
 			// TEST PINGS
 			getPings()
@@ -657,17 +659,24 @@ function getTime(date){
 
 // PLACES list
 
-function getLocations(preferences){
-	// var preferences = {topList: userCDQ.top, price: userCDQ.price, rating: {max: val, min: userCDQ.rating}, reviews: userCDQ.reviews}
+function getLocations(){
+	// var preferences = {topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews}
+
+	var preferences = {topList: userCDQ.top, price: userCDQ.price, rating: userCDQ.rating, reviews: userCDQ.reviews}
 	preferences.price = preferences.price ? {min: preferences.price.min.length, max: preferences.price.max.length} : {min: 1, max: 4}
 
-	if(!preferences.rating.max)
-		preferences.rating = {max: 5, min: preferences.rating}
-	if(preferences.rating.min == -1)
-		preferences.rating.min = 0
+	if(preferences.rating == -1)
+		preferences.rating = 0
 
 	if(!preferences.reviews)
 		preferences.reviews = {min: 0, max: 1001}
+
+	numQueued++
+	var queuedIndex = numQueued
+
+	$('#places-list').html("<div class='place-loading'>Loading...</div>")
+	$('#num-ego-cen').html('')
+	$('#load-more-places').hide()
 
 	$.ajax({
 		type: 'POST',
@@ -676,86 +685,90 @@ function getLocations(preferences){
 		dataType: 'json',
 		contentType: 'application/json',
 		success: function(list){
-			for(var i = 0; i < list.length; i++){
-				var entry = list[i]
-				entry.agree = []
-				entry.disagree = []
-				var agreeImgs = ''
-				var disagreeImgs = ''
-				for(var j = 0; j < members.length; j++){
-					var member = members[j]
-					var agree = (!member.top || member.top.includes(entry.top)) && (member.rating == -1 || member.rating <= entry.rating) && 
-								(!member.price || (member.price.min.length <= entry.price && entry.price <= member.price.max.length)) &&
-								(!member.reviews || member.reviews.min <= entry.reviews)
-					if(member.reviews && member.reviews.max != 1001)
-						agree = agree && (entry.reviews <= member.reviews.max)
+			if(numQueued == queuedIndex){
+				placesList = [];
+				for(var i = 0; i < list.length; i++){
+					var entry = list[i]
+					entry.agree = []
+					entry.disagree = []
+					var agreeImgs = ''
+					var disagreeImgs = ''
+					for(var j = 0; j < members.length; j++){
+						var member = members[j]
+						var agree = (!member.top || member.top.includes(entry.top)) && (member.rating == -1 || member.rating <= entry.rating) && 
+									(!member.price || (member.price.min.length <= entry.price && entry.price <= member.price.max.length)) &&
+									(!member.reviews || member.reviews.min <= entry.reviews)
+						if(member.reviews && member.reviews.max != 1001)
+							agree = agree && (entry.reviews <= member.reviews.max)
 
-					if(agree){
-						entry.agree.push({id: member.id, filename: member.filename, index: j})
-						agreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
-					}else{
-						entry.disagree.push({id: member.id, filename: member.filename, index: j})
-						disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
-					}
-				}
-
-				var ratingHtml = ''
-				var left = entry.rating/1
-				for(j = 0; j < 5; j++){
-					if(left == 0.5){
-						ratingHtml += "<span><img src='img/List_star_0.png'></span>"
-						left -= 0.5
-					}else if(left == 0)
-						ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
-					else{
-						ratingHtml += "<span><img src='img/List_star_1.png'></span>"
-						left--;
+						if(agree){
+							entry.agree.push({id: member.id, filename: member.filename, index: j})
+							agreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+						}else{
+							entry.disagree.push({id: member.id, filename: member.filename, index: j})
+							disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+						}
 					}
 
+					var ratingHtml = ''
+					var left = entry.rating/1
+					for(j = 0; j < 5; j++){
+						if(left == 0.5){
+							ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+							left -= 0.5
+						}else if(left == 0)
+							ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+						else{
+							ratingHtml += "<span><img src='img/List_star_1.png'></span>"
+							left--;
+						}
+
+					}
+
+					entry.html = `<div class='place-entry'>
+										<div class='place-img-section'>
+											<img src='test_imgs/${entry.top}.jpg'/>
+											<input type='checkbox'><span> Add this to group archive </span>
+										</div>
+										<div class='place-info-section'>
+											<h1>${topNames[entry.top.split('_')[1]]}</h1>
+											<h1><b>${entry.name} | ${'$'.repeat(entry.price)}</b></h1>
+											<div class='place-reviews'>
+												${ratingHtml}
+												<span>${entry.reviews} reviews</span>
+											</div>
+											<h2>${entry.address} | ...</h2>
+											<div class='place-agreement-info'>
+												<div class='place-disagrees'>
+													<h2><b> Disagree: </b></h2>
+													<div class='img-list'>${disagreeImgs}</div>
+												</div>
+												<div class='place-agrees'>
+													<h2><b> Agree: </b></h2>
+													<div class='img-list'>${agreeImgs}</div>
+												</div>
+											</div>
+										</div>
+									</div>`
+					placesList.push(entry)
+				}
+				$('#num-ego-cen').html('(' + placesList.length + ' places)')
+
+				// LOAD MORE PLACES
+				placesList.sort(placeListSort)
+				if(placesList.length > 20){
+					placesLoaded = 20
+					$('#load-more-places').show()
+					$('#places-list').html(placesList.slice(0,20).map(place => place.html).join(''))
+				}else{
+					placesLoaded = placesList.length
+					$('#load-more-places').hide()
+					$('#places-list').html(placesList.map(place => place.html).join(''))
 				}
 
-				entry.html = `<div class='place-entry'>
-									<div class='place-img-section'>
-										<img src='test_imgs/${entry.top}.jpg'/>
-										<input type='checkbox'><span> Add this to group archive </span>
-									</div>
-									<div class='place-info-section'>
-										<h1>${topNames[entry.top.split('_')[1]]}</h1>
-										<h1><b>${entry.name} | ${'$'.repeat(entry.price)}</b></h1>
-										<div class='place-reviews'>
-											${ratingHtml}
-											<span>${entry.reviews} reviews</span>
-										</div>
-										<h2>${entry.address} | ...</h2>
-										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'>${disagreeImgs}</div>
-											</div>
-											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
-												<div class='img-list'>${agreeImgs}</div>
-											</div>
-										</div>
-									</div>
-								</div>`
-				placesList.push(entry)
+				if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
+					$('#middle > .column-content').css('overflow-y', 'scroll')
 			}
-			$('#num-ego-cen').html('(' + placesList.length + ' places)')
-
-			// LOAD MORE PLACES
-			placesList.sort(placeListSort)
-			if(placesList.length > 20){
-				placesLoaded = 20
-				$('#places-list').html(placesList.slice(0,20).map(place => place.html).join(''))
-			}else{
-				placesLoaded = placesList.length
-				$('#load-more-places').hide()
-				$('#places-list').html(placesList.map(place => place.html).join(''))
-			}
-
-			if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
-				$('#middle > .column-content').css('overflow-y', 'scroll')
 		}
 	})
 }
