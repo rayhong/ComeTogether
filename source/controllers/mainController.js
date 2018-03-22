@@ -147,9 +147,7 @@ module.exports = function(app, con){
 			sql += `p_top IN ${strList} AND `
 		}
 		sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
-				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating.min)} AND `
-		if(data.rating.max != 5)
-			sql += `CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) < ${con.escape(data.rating.max)} AND `
+				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating)} AND `
 
 		sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
 		if(data.reviews.max != 1001)
@@ -162,7 +160,7 @@ module.exports = function(app, con){
 				var placesList = result.map(function(entry){
 					var entryData = JSON.parse(entry.p_data).data
 					return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
-							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address}
+							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images}
 				})
 				res.send(placesList)
 			}

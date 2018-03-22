@@ -162,7 +162,7 @@ function getPathAndQuery(sql, socket, con){
 			if(err)
 				console.log(err)
 			else{
-				var path = Object.values(result[0])[0]
+				var path =  Object.keys(result[0]).map(k => result[0][k])[0]
 				path = path.slice(1, path.length - 9)
 				socket.path = path;
 				sql = sql.replace(/xxxx/g, socket.path)

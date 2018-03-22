@@ -1,4 +1,3 @@
-// ip: 127.0.0.1
 // necessary packages
 var express = require('express');
 var mysql = require('mysql');
@@ -13,13 +12,7 @@ var app = express();
 
 var server = require('http').createServer(app);
 
-var options = {
-	host: "hdslab.hcde.uw.edu",
-	user: "traffigram",
-	password: "traffigram@HCDE2017",
-	database: "cometogether",
-	connectionLimit: 100
-};
+var options = require('./options.js')
 
 // mysql connection configs
 var con = mysql.createPool(options);
@@ -54,6 +47,7 @@ app.use(session({
 	}
 	*/
 }))
+/
 
 // initiate controller for index page and main page(including registration and login pages)
 indexController(app, con);
@@ -62,11 +56,11 @@ socketController(server, con)
 
 // install middleware for static files
 app.use(express.static(__dirname));
+app.use(express.static(__dirname + '/../../../places/03_01_2018_Seattle/photos/');
 
 // start the server
 server.listen(8000);
 console.log('server up');
-
 
 // returns the current time as a string timestamp 'YYYY-MM-DD HH:MM:SS'
 function getTimestamp(){
@@ -83,7 +77,7 @@ function getTimestamp(){
 
 
 /*
- [To add more places data to database]
+// [To add more places data to database]
 var fs = require('fs')
 var path = require('path')
 
@@ -98,36 +92,37 @@ var locationTypes = [{res_american: ["newamerican", "tradamerican"]}, {res_cn: [
 					 {night_bar: ["bars"]}, {night_beerg: ["beergardens"]}, {night_jazz: ["jazzandblues"]}, {night_karaoke: ["karaoke"]}, 
 					 {night_comedy: ["comedyclubs"]}, {night_music: ["musicvenues"]}, {night_dance: ["danceclubs"]}];
 
-for(var i = 0; i < 1; i++){
+
+
+for(var i = 0; i < locationTypes.length; i++){
 	var type = locationTypes[i]
 	var id = Object.keys(type)[0]
 	var filenames = type[id]
-	for(var j = 0; j < 1; j++){
+	for(var j = 0; j < filenames.length; j++){
 		var filename = filenames[j]
 		var filePath = path.join(__dirname, "final/" + filename + "Final.txt")
-		fs.readFile(filePath, 'utf8', function(err, data){
-			if(err) throw err;
-			var temp = data.split('\n').pop()
-			var placesInfo = temp.map( placeInfo => JSON.parse(placeInfo))
-			for(var k = 0; k < placesInfo.length; k++){
-				var sql = `INSERT INTO places (p_mid, p_cid, p_top, p_data) 
-						VALUES ('m_sea', 'c_${placesInfo[i].city.toLowerCase().replace(/ /g, "_")}', 'attr_landmark', 
-								JSON_OBJECT('type', 'place', 'data',
-											JSON_OBJECT('yelp', 
-														JSON_OBJECT('id', ${con.escape(placesInfo[i].yelpId)}, 'name', ${con.escape(placesInfo[i].name)}, 'rating', ${con.escape(placesInfo[i].yelpRating)}, 
-																	'review_cnt', ${con.escape(placesInfo[i].yelpRatingCount)}, 'coord_lat', ${con.escape(placesInfo[i].locY)},
-																	'coord_lng', ${con.escape(placesInfo[i].locX)}, 'phone', ${con.escape(placesInfo[i].phone)}, 'address', ${con.escape(placesInfo[i].address)},
-																	'city', ${con.escape(placesInfo[i].city)}, 'zip', ${con.escape(placesInfo[i].zip)}, 'yelp_url', ${con.escape(placesInfo[i].yelpURL)}, 
-																	'yelp_url_mobile', ${con.escape(placesInfo[i].yelpURLMobile)}),
-														'google',
-														JSON_OBJECT('id', ${con.escape(placesInfo[i].placeId)}, 'rating', ${con.escape(placesInfo[i].googleRating)}, 'open_hours', ${con.escape(placesInfo[i].openingHours)}, 
-																	'images', ${con.escape(placesInfo[i].photos)}, 'price', ${con.escape(placesInfo[i].priceLevels)},
-																	'reviews', ${con.escape(placesInfo[i].googleReviews)}))))`
-				con.query(sql, function(err, result){
-					if(err) throw err;
-				})
-			}
-		})
+		var data = fs.readFileSync(filePath, 'utf8')
+		var temp = data.split('\n')
+		temp.pop()
+		var placesInfo = temp.map(str => JSON.parse(str))
+		for(var k = 0; k < placesInfo.length; k++){
+			var sql = `INSERT INTO places (p_mid, p_cid, p_top, p_data) 
+					VALUES ('m_sea', 'c_${placesInfo[k].city.toLowerCase().replace(/ /g, "_")}', '${id}', 
+							JSON_OBJECT('type', 'place', 'data',
+										JSON_OBJECT('yelp', 
+													JSON_OBJECT('id', ${con.escape(placesInfo[k].yelpId)}, 'name', ${con.escape(placesInfo[k].name)}, 'rating', ${con.escape(placesInfo[k].yelpRating)}, 
+																'review_cnt', ${con.escape(placesInfo[k].yelpRatingCount)}, 'coord_lat', ${con.escape(placesInfo[k].locY)},
+																'coord_lng', ${con.escape(placesInfo[k].locX)}, 'phone', ${con.escape(placesInfo[k].phone)}, 'address', ${con.escape(placesInfo[k].address)},
+																'city', ${con.escape(placesInfo[k].city)}, 'zip', ${con.escape(placesInfo[k].zip)}, 'yelp_url', ${con.escape(placesInfo[k].yelpURL)}, 
+																'yelp_url_mobile', ${con.escape(placesInfo[k].yelpURLMobile)}),
+													'google',
+													JSON_OBJECT('id', ${con.escape(placesInfo[k].placeId)}, 'rating', ${con.escape(placesInfo[k].googleRating)}, 'open_hours', ${con.escape(placesInfo[k].openingHours)}, 
+																'images', ${con.escape(placesInfo[k].reference)}, 'price', ${con.escape(placesInfo[k].priceLevels)},
+																'reviews', ${con.escape(placesInfo[k].googleReviews)}))))`
+			con.query(sql, function(err, result){
+				if(err) throw err;
+			})
+		}
 	}
 }
 */
