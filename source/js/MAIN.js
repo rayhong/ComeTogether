@@ -862,17 +862,32 @@ function changeMemberAgreement(member, isNew){
 			change = true;
 		}
 
+		var ratingHtml = ''
+		var left = place.rating/1
+		for(j = 0; j < 5; j++){
+			if(left == 0.5){
+				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+				left -= 0.5
+			}else if(left == 0)
+				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+			else{
+				ratingHtml += "<span><img src='img/List_star_1.png'></span>"
+				left--;
+			}
+
+		}
+
 		if(change){
 			place.html = `<div class='place-entry'>
 							<div class='place-img-section'>
-								<img src='test_imgs/${place.top}.jpg'/>
+								<img src='${place.photo}0.jpg'/>
 								<input type='checkbox'><span> Add this to group archive </span>
 							</div>
 							<div class='place-info-section'>
 								<h1>${topNames[place.top.split('_')[1]]}</h1>
 								<h1><b>${place.name} | ${'$'.repeat(place.price)}</b></h1>
 								<div class='place-reviews'>
-									<img src='test_imgs/rating.png'> ${place.rating}
+									${ratingHtml}
 									<span>${place.reviews} reviews</span>
 								</div>
 								<h2>${place.address} | ...</h2>

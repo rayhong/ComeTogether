@@ -821,6 +821,14 @@ a {
 	margin-right: 10px;
 }
 
+.place-loading{
+	text-align: center;
+	color: #D8D8D8;
+	margin-right: 5px;
+	padding: 10px 0 15px 0;
+	width: 550px;
+}
+
 .place-entry{
 	margin-right: 5px;
 	padding: 10px 0 15px 0;

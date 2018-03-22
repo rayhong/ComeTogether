@@ -12,6 +12,7 @@ var app = express();
 
 var server = require('http').createServer(app);
 
+
 var options = require('./options.js')
 
 // mysql connection configs
@@ -47,7 +48,7 @@ app.use(session({
 	}
 	*/
 }))
-/
+
 
 // initiate controller for index page and main page(including registration and login pages)
 indexController(app, con);
@@ -56,7 +57,7 @@ socketController(server, con)
 
 // install middleware for static files
 app.use(express.static(__dirname));
-app.use(express.static(__dirname + '/../../../places/03_01_2018_Seattle/photos/');
+app.use(express.static(__dirname + '/../../../places/03_01_2018_Seattle/photos/'))
 
 // start the server
 server.listen(8000);
@@ -77,7 +78,7 @@ function getTimestamp(){
 
 
 /*
-// [To add more places data to database]
+ [Script: To add more places data to database]
 var fs = require('fs')
 var path = require('path')
 
@@ -91,7 +92,6 @@ var locationTypes = [{res_american: ["newamerican", "tradamerican"]}, {res_cn: [
 					 {shop_elec: ["electronics"]}, {shop_jewel: ["fashion", "jewelry"]}, {shop_grocery: ["grocery"]}, 
 					 {night_bar: ["bars"]}, {night_beerg: ["beergardens"]}, {night_jazz: ["jazzandblues"]}, {night_karaoke: ["karaoke"]}, 
 					 {night_comedy: ["comedyclubs"]}, {night_music: ["musicvenues"]}, {night_dance: ["danceclubs"]}];
-
 
 
 for(var i = 0; i < locationTypes.length; i++){
