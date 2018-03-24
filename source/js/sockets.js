@@ -303,4 +303,106 @@ $(document).ready(function(){
 			$('#ping-container .nothing-msg').hide()
 		}
 	})
+
+	socket.on('add fav', function(data){
+		var entry = data
+		entry.agree = []
+		entry.disagree = []
+		var agreeImgs = ''
+		var disagreeImgs = ''
+		for(var j = 0; j < members.length; j++){
+			var member = members[j]
+			var agree = (!member.top || member.top.includes(entry.top)) && (member.rating == -1 || member.rating <= entry.rating) && 
+						(!member.price || (member.price.min.length <= entry.price && entry.price <= member.price.max.length)) &&
+						(!member.reviews || member.reviews.min <= entry.reviews)
+			if(member.reviews && member.reviews.max != 1001)
+				agree = agree && (entry.reviews <= member.reviews.max)
+
+			if(agree){
+				entry.agree.push({id: member.id, filename: member.filename, index: j})
+				agreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+			}else{
+				entry.disagree.push({id: member.id, filename: member.filename, index: j})
+				disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+			}
+		}
+
+		var ratingHtml = ''
+		var left = entry.rating/1
+		for(j = 0; j < 5; j++){
+			if(left == 0.5){
+				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+				left -= 0.5
+			}else if(left == 0)
+				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+			else{
+				ratingHtml += "<span><img src='img/List_star_1.png'></span>"
+				left--;
+			}
+
+		}
+
+		$("#place-" + entry.id + " .check-place").prop("checked", true);
+
+		entry.html = `<div id='fav-${entry.id}' class='place-entry'>
+								<div class='place-img-section'>
+									<img src='${entry.photo}0.jpg'/>
+									<input id="check-fav-${entry.id}" class="check-fav" type='checkbox'><label for="check-fav-${entry.id}"> Add this to group archive </label>
+								</div>
+								<div class='place-info-section'>
+									<h1>${topNames[entry.top.split('_')[1]]}</h1>
+									<h1><b>${entry.name} | ${'$'.repeat(entry.price)}</b></h1>
+									<div class='place-reviews'>
+										${ratingHtml}
+										<span>${entry.reviews} reviews</span>
+									</div>
+									<h2>${entry.address} | ...</h2>
+									<div class='place-agreement-info'>
+										<div class='place-disagrees'>
+											<h2><b> Disagree: </b></h2>
+											<div class='img-list'>${disagreeImgs}</div>
+										</div>
+										<div class='place-agrees'>
+											<h2><b> Agree: </b></h2>
+											<div class='img-list'>${agreeImgs}</div>
+										</div>
+									</div>
+								</div>
+							</div>`
+
+		favsList.push(entry)
+
+		$('#num-fav').html('(' + favsList.length + ' places)')
+
+		$(".check-fav").change(function(){
+			// TODO change so removes if already checked
+			socket.emit('add fav', $(this).attr("id").slice(10,))
+		})
+
+		// LOAD MORE PLACES
+		if(favsList.length == 0){
+			$("#favs-list").html("<div class='nothing-msg' style='width: 540px'> No places to show </div>")
+			$('#middle > .column-content').css('overflow-y', 'hidden')
+		}else{
+			favsList.sort(placeListSort)
+			$('#favs-list').html(favsList.slice(0,20).map(place => place.html).join(''))
+
+			if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
+				$('#middle > .column-content').css('overflow-y', 'scroll')
+			else
+				$('#middle > .column-content').css('overflow-y', 'hidden')
+		}
+	})
+
+	socket.on('remove fav', function(id){
+		for(var j = 0; j < favsList.length; j++){
+			if(favsList[j].id === id){
+				favsList.splice(j, 1)
+				$("#fav-" + id).remove();
+				$("#place-" + id + " .check-place").prop("checked", false)
+				$('#num-fav').html('(' + favsList.length + ' places)')
+				break;
+			}
+		}
+	})
 })

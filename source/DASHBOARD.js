@@ -61,32 +61,21 @@ $.ajax({
 									var html = `<div class="group_entry" id=${groupData.g_id}>
 													<h1><span class="group_title">${groupData.g_title}</span> on ${groupData.g_date.slice(0,10)}</h1>
 													<p class='num_msgs_cont' ${numMsgs > 0 ? '' : 'hidden'}><span style="color: #f00"><span class="num_msgs">${numMsgs}</span> new messages </span>in this group</p>
+													<p>${groupData.g_info}</p>
 													<p class='imgs-cont'>${images}</p>
 													<span class="${groupData.members && groupData.members.length > 1 ? 'btn' : 'btn_dis'} participate_btn"> PARTICIPATE </span>
 													<span class="btn leave_btn"> LEAVE THIS GROUP </span>
-													<div style="margin-top: 5px">
-														<span><input type="text" class="input_text copy_url" value="http://${ip_address}:8000/main?group_id=${groupData.g_id}" style="width: 275px" readonly/></span>
-													</div>
 												</div>`
 									$(".group_list").append(html);
 								}
 
 								$(".participate_btn").click(function(){
 									if($(this).attr('class') === 'btn participate_btn')
-										window.location.href = `http://${ip_address}:8000/main?group_id=${$(this).parent().attr('id')}`
+										window.location.href = `http://127.0.0.1:8000/main?group_id=${$(this).parent().attr('id')}`
 								})
 
 								$(".leave_btn").click(function(){
 									console.log("try to leave group " + $(this).parent().attr('id'))
-								})
-
-								$(".copy_url").click(function(){
-									console.log("hey")
-									var $temp = $("<input>");
-									$("body").append($temp);
-									$temp.val($(this).val()).select();
-									document.execCommand("copy");
-									$temp.remove();
 								})
 
 								$(".group_list").fadeIn();
@@ -151,7 +140,6 @@ function offEvents_dashboard(){
 	$(document).off("click", "#SETTINGS");
 	$(document).off("click", ".participate_btn");
 	$(document).off("click", ".leave_btn");
-	$(document).off("click", ".copy_url")
 }
 
 function getNumNewMsgs(logoutTime, chatLog){

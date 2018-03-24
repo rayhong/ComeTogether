@@ -33,12 +33,13 @@ module.exports = function(app, con){
 	});
 
 	app.get('/get_group_cdqs', function(req, res){
-		var sql = `SELECT g_cdq, g_status FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
+		var sql = `SELECT g_title, g_cdq, g_status FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
 
 		con.query(sql, function(err, result){
 			if(err) 
 				console.log(err);
 			else{
+				var title = result[0].g_title
 				var status = JSON.parse(result[0].g_status)
 				var cdqData = JSON.parse(result[0].g_cdq).data;
 				var invitedToList = status.invited_to;
@@ -102,11 +103,11 @@ module.exports = function(app, con){
 							if(err)
 								console.log(err)
 							else{
-								res.send({id: {user: req.session.userID, group: req.session.groupID}, user: user, group: group, new: true});
+								res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: true});
 							}
 						})
 					}else
-						res.send({id: {user: req.session.userID, group: req.session.groupID}, user: user, group: group, new: false});
+						res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: false});
 				})
 			}
 		})
@@ -145,15 +146,33 @@ module.exports = function(app, con){
 			}
 			strList += ')'
 			sql += `p_top IN ${strList} AND `
-		}
-		sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
+			sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
 				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating)} AND `
 
-		sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
-		if(data.reviews.max != 1001)
-			sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
+			sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
+			if(data.reviews.max != 1001)
+				sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
 
-		con.query(sql, function(err,result){
+			con.query(sql, function(err,result){
+				if(err) 
+					console.log(err);
+				else{
+					var placesList = result.map(function(entry){
+						var entryData = JSON.parse(entry.p_data).data
+						return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
+								rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images}
+					})
+					res.send(placesList)
+				}
+			})
+		}else{
+			res.send([])
+		}
+	})
+
+	app.get('/get_favorites', function(req, res){
+		var sql = `SELECT p_top, p_data FROM places WHERE id IN (SELECT fav_place_id FROM favorites WHERE fav_g_id=${con.escape(req.session.groupID)})`
+		con.query(sql, function(err, result){
 			if(err) 
 				console.log(err);
 			else{

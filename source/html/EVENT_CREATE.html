@@ -5,18 +5,52 @@
 		<div class="description">Please fill out the information on the right</br>to create an event.</div>
 	</div>
 	<div id="right">
-		<div class="login_heading"> REQUIRED INFORMATION 
+		<div class="login_heading"> BASIC INFORMATION 
 			<div>
 				<span><input type="text" id="input_title" class="input_text" placeholder="Enter event title" data-verified="false"/></span>
 				<span id="check_title">*</span>
 			</div>
+		</div>
+		<div class="login_heading">POSSIBLE TIME(S)
 			<div>
-				<span><input type="date" id="input_date" class="input_text" placeholder="Pick a date for the event"/></span>
-				<span  id="check_date">*</span>
+				<span class="description">
+					Add a couple of times you think your group may meet up.</br>
+					Note: you can modify the option(s) later.
+				</span>
 			</div>
 			<div>
-				<span><textarea type="text" id="input_note" class="input_text" placeholder="Add a note about the event"/></span>
-				<span  id="check_note">*</span>
+				<span><input type="date" id="input_date" class="input_text" placeholder="Date" style="width:150px"/></span>
+				<span><input type="time" id="input_time" class="input_text" placeholder="Time" style="width:150px"/></span>
+			</div>
+		</div>
+		<div class="login_heading">TYPES OF DESTINATION *
+			<div>
+				<span class="description">
+					Select every destination type that might be of</br>
+					interest to your group.
+				</span>
+			</div>
+			<div id="type_checklist">
+				<div>
+					<input id="check_res" class="check_tod" type="checkbox" name="res"/>
+					<label class="check_txt" for="check_res"><span style="font-weight: 500">Restaurants</span> (e.g. American, French, Chinese, </br>Mexican)</label>
+				</div>
+				<div>
+					<input id="check_caf" class="check_tod" type="checkbox" name="caf"/>
+					<label class="check_txt" for="check_caf"><span style="font-weight: 500">Cafe</span> (e.g. Cafes, Dessert places)</label>
+				</div>
+				<div>
+					<input id="check_attr" class="check_tod" type="checkbox" name="attr"/>
+					<label class="check_txt" for="check_attr"><span style="font-weight: 500">Travel Attractions</span> (e.g. Landmarks, Parks)</label>
+				</div>
+				<div>
+					<input id="check_night" class="check_tod" type="checkbox" name="night"/>
+					<label class="check_txt" for="check_night"><span style="font-weight: 500">Nightlife</span> (e.g. Bars, Beer Gardens)</label>
+				</div>
+				<div>
+					<input id="check_shop" class="check_tod" type="checkbox" name="shop"/>
+					<label class="check_txt" for="check_shop"><span style="font-weight: 500">Shopping</span> (e.g. Department Stores, Electronics)</label>
+				</div>
 			</div>
 			<div class="buttons" style="margin-top:10px;">
 				<span class="btn_dis" id="EVENT_CREATE_READY" style="margin-left:0px;">

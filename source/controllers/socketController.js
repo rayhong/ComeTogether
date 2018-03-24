@@ -125,6 +125,40 @@ module.exports = function(server, con){
 			})
 		})
 
+		socket.on('add fav', function(placeID){
+			var sqlsearch = `SELECT id, p_top, p_data FROM places WHERE p_data->'$.data.yelp.id'=${con.escape(placeID)}`
+			con.query(sqlsearch, function(err, placeInfo){
+				if(placeInfo.length > 0){
+					var sql = `INSERT INTO favorites (fav_g_id, fav_user_id, fav_place_id) VALUES (${con.escape(socket.groupID)}, ${con.escape(socket.userID)}, ${placeInfo[0].id})`
+					con.query(sql, function(err, result){
+						if (err)
+							console.log(err)
+						else{
+							var entryData = JSON.parse(placeInfo[0].p_data).data
+							io.in(socket.groupID).emit('add fav', {id: entryData.yelp.id, top: placeInfo[0].p_top, name: entryData.yelp.name, 
+																   price: entryData.google.price, rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, 
+																   address: entryData.yelp.address, photo: entryData.google.images})
+						}
+					})
+				}
+			})
+		})
+
+		socket.on('remove fav', function(placeID){
+			var sqlsearch = `SELECT id FROM places WHERE p_data->'$.data.yelp.id'=${con.escape(placeID)}`
+			con.query(sqlsearch, function(err, placeInfo){
+				if(placeInfo.length > 0){
+					var sql = `DELETE FROM favorites WHERE fav_g_id=${con.escape(socket.groupID)} AND fav_user_id=${con.escape(socket.userID)} AND fav_place_id=${placeInfo[0].id}`
+					con.query(sql, function(err, result){
+						if (err) 
+							console.log(err)
+						else
+							socket.broadcast.to(socket.groupID).emit('remove fav', placeID)
+					})
+				}
+			})
+		})
+
 		socket.on('disconnect', function(){
 			if(socket.groupID){
 				var sql = `UPDATE users SET user_groups=JSON_SET(user_groups, CONCAT(TRIM(TRAILING '.g_id' FROM TRIM(BOTH '"' FROM 

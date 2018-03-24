@@ -142,7 +142,7 @@ module.exports = function(app, con){
 	app.get('/get_group_info', function(req, res){
 		var data = req.query.data;
 		if(data !== '()'){
-			var sql = `SELECT g_id, g_title, g_date, g_info, g_status, g_chat_log FROM groups WHERE g_id IN ${data}`
+			var sql = `SELECT g_id, g_title, g_date, g_types, g_status, g_chat_log FROM groups WHERE g_id IN ${data}`
 			con.query(sql, function(err, result){
 				getMembersInfo(result, 0, con, res)
 			})
@@ -176,8 +176,9 @@ module.exports = function(app, con){
 		// if group creation in progress, edit the group
 		// else create the group
 		if(req.session.g_id){
-			var sql = `UPDATE groups SET g_title=${con.escape(data.title)}, g_date=${con.escape(data.date)}, g_info=${con.escape(data.note)}
-						WHERE g_id=${con.escape(req.session.g_id)}`
+			var sql = `UPDATE groups SET g_title=${con.escape(data.title)}, g_date=${con.escape(data.date)}, 
+					   g_types=JSON_OBJECT('restaurants', ${data.type.res}, 'cafe', ${data.type.caf}, 'attractions', ${data.type.attr}, 'shopping', ${data.type.shop}, 'nightlife', ${data.type.night}) 
+					   WHERE g_id=${con.escape(req.session.g_id)}`
 			con.query(sql, function(err, result){
 				if(err)
 					res.send(JSON.stringify({success: false}))
@@ -186,8 +187,9 @@ module.exports = function(app, con){
 			})
 		}else{
 			var id = Math.random().toString(36).substring(2, 12).toUpperCase()
-			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_info, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
-					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, ${con.escape(data.note)}, 
+			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_types, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
+					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, 
+					   JSON_OBJECT('restaurants', ${data.type.res}, 'cafe', ${data.type.caf}, 'attractions', ${data.type.attr}, 'shopping', ${data.type.shop}, 'nightlife', ${data.type.night}), 
 					   JSON_OBJECT('ongoing', true, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY(
 					   JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'top_init', false, 'top', JSON_ARRAY(), 'price_init', false, 

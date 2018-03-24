@@ -5,14 +5,17 @@ $(document).ready(function(){
 		var change = 0;
 		if(this.checked){
 			$('.check-box').css('fill', '#F0F0F0')
+            $('.check-mark').css('opacity', 0)
 			updateTopAgreementAll(1, false);
 			socket.emit('top change all', {change: 1})
 			userCDQ.top = false;
+            getLocations()
 		}else{
 			$('.check-box').css('fill', '#FFF')
 			updateTopAgreementAll(-1, false);
 			socket.emit('top change all', {change: -1})
 			userCDQ.top = []
+            getLocations()
 		}
 	})
 

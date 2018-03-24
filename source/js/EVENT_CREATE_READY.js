@@ -10,7 +10,8 @@ $.ajax({
 		// update UI at #canvas
 		var title = $("#input_title").val()
 		var date = $("#input_date").val()
-		var note = $("#input_note").val()
+		var tods = {res: $("#check_res").is(":checked"), caf: $("#check_caf").is(":checked"), night: $("#check_night").is(":checked"),
+				   shop: $("#check_shop").is(":checked"), attr: $("#check_attr").is(":checked")}
 		$("#canvas").empty();
 		$("#canvas").append(data);
 		setTimeout(function(){
@@ -27,8 +28,11 @@ $.ajax({
 
 			$("#event-title").text(title);
 			$("#event-date").text(date);
-			$("#event-note").text(note);
-			$("#group_url").val("http://127.0.0.1:8000/main?group_id=" + window.localStorage.group_id);
+			var todsStr = `${tods.res ? "Restaurants " : ""}${tods.caf ? "Cafes " : ""}${tods.shop ? "Shopping " : ""}${tods.night ? "Nightlife " : ""}${tods.attr ? "Attractions " : ""}`
+			console.log(todsStr)
+			$("#event-tods").text(todsStr.slice(0, todsStr.length -1).replace(/ /g, ", "));
+
+			$("#group_url").val("http://" + ip_address + ":8000/main?group_id=" + window.localStorage.group_id);
 
 			$(document).on("click", "#EVENT_CREATE", function(){
 				offEvents_event_create_ready();
@@ -43,10 +47,12 @@ $.ajax({
 				$temp.remove();
 			});
 
+			/*
 			$("#input_email").keyup(function(){
 				$("#email-err-msg").hide();
 			})
-
+			*/
+			/*
 			$(document).on("click", "#add_email", function(){
 				var email = $("#input_email").val()
 				var re = /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/
@@ -58,6 +64,7 @@ $.ajax({
 					$("#email-err-msg").show();
 				}
 			});
+			*/
 
 			$(document).on("click", ".email-remove", function(){
 				var num = $(this).data("num");

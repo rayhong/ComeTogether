@@ -14,6 +14,7 @@
 		<!-- Socket.io -->
 		<script src="/socket.io/socket.io.js"></script>
 		<!-- JS -->
+		<script src="js/global.js"></script>
 		<script src="js/MAIN.js"></script>
 		<script src="js/filters.js"></script>
 		<script src="js/messages.js"></script>
@@ -26,7 +27,7 @@
 					<div class='bar-content' style='margin-top: 15px'>
 						<div style='width: 320px; font-size: 30px;'>
 							<img style='height: 40px; width: 40px' src='../img/test.png'/>
-							<span style='vertical-align: top'>Meeting Name</span>
+							<span id="meeting-name" style='vertical-align: top'>Meeting Name</span>
 						</div>
 						<div style='width: 540px;'>
 							<input class='input-search' type='text' style='width: 450px' placeholder='Which place are you looking for?'/>
@@ -230,13 +231,19 @@
 						<div class='radio-options'>
 							<input type='radio' name='place-list' id='ego-radio' value='personal' checked>
 							<label for='ego-radio'>Show places matching my filter <b id='num-ego-cen'>(0 places)</b></label>
-							<!--<input type='radio' name='place-list' id='archive-radio' value='archive'>
-							<label for='archive-radio'>Show places in group archive <b>(XX places)</b></label>-->
+							<input type='radio' name='place-list' id='archive-radio' value='archive'>
+							<label for='archive-radio'>Show places in group archive <b id='num-fav'>(0 places)</b></label>
 						</div>
 						<div class='column-content'>
-							<div id='places-list'>
+							<div id='places-container'>
+								<div id='places-list'>
+								</div>
+								<div id='load-more-places'> Scroll down to Load More Places </div>
 							</div>
-							<div id='load-more-places'> Scroll down to Load More Places </div>
+							<div id='favs-container' hidden>
+								<div id='favs-list'>
+								</div>
+							</div>
 						</div>
 					</div><!--
 					--><div id="right">

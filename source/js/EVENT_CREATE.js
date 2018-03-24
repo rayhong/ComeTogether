@@ -9,11 +9,11 @@ $.ajax({
 		// get input data depending on previous page
 		var title = "";
 		var date = "";
-		var note = "";
+		var tods;
 		if($("#SCR_EVENT_CREATE_READY").length){
 			title = $("#event-title").text()
 			date = $("#event-date").text()
-			note = $("#event-note").text()
+			tods = $("#event-tods").text().split(", ")
 		}else{
 			title = $("#event_title").val()
 		}
@@ -55,10 +55,19 @@ $.ajax({
 				$("#input_date").css("color", "#000");
 				$("#check_date").html("&#10004;");
 			}
-			if(note != ""){
-				$("#input_note").val(note);
-				$("#input_note").css("color", "#000");
-				$("#check_note").html("&#10004;");
+			if(tods){
+				for(i = 0; i < tods.length; i++){
+					if(tods[i] == "Restaurants")
+						$("#check_res").prop("checked", true)
+					else if(tods[i] == "Cafes")
+						$("#check_caf").prop("checked", true)
+					else if(tods[i] == "Shopping")
+						$("#check_shop").prop("checked", true)
+					else if(tods[i] == "Nightlife")
+						$("#check_night").prop("checked", true)
+					else if(tods[i] == "Attractions")
+						$("#check_attr").prop("checked", true)
+				}
 				verify_required()
 			}
 
@@ -75,16 +84,15 @@ $.ajax({
 					$("#check_title").html("*");
 				verify_required();
 			})
+
 			$("#input_date").change(function(){
-				verify_date();
-			})
-			$("#input_note").keyup(function(){
-				if($(this).val() != "")
-					$("#check_note").html("&#10004;");
-				else
-					$("#check_note").html("*");
 				verify_required();
 			})
+
+			$(".check_tod").change(function(){
+				verify_required();
+			})
+
 
 			// creates group or edits depending on whether user previous actions
 			$(document).on("click", "#EVENT_CREATE_READY", function(){
@@ -129,7 +137,8 @@ function verify_required(){
 	// checks if all necessary fields are filled or verified
 	if($("#input_title").val()!="" 
 		&& ($("#input_date").val()!="" && $("#input_date")[0].valueAsNumber/86400000 >= Math.floor(new Date()/86400000)) 
-		&& $("#input_note").val()!=""){
+		&& ($("#check_res").is(":checked") || $("#check_caf").is(":checked") || $("#check_attr").is(":checked") ||
+			$("#check_night").is(":checked") || $("#check_shop").is(":checked"))){
 		$("#EVENT_CREATE_READY").attr("class", "btn");
 	}else if($("#EVENT_CREATE_READY").attr('class') == "btn")
 		$("#EVENT_CREATE_READY").attr("class", "btn_dis");
@@ -153,7 +162,9 @@ function verify_date(){
 }
 
 function create_group(){
-	var data = {title: $("#input_title").val(), date: $("#input_date").val(), note: $("#input_note").val()}
+	var data = {title: $("#input_title").val(), date: $("#input_date").val(), 
+				type: {res: $("#check_res").is(":checked"), caf: $("#check_caf").is(":checked"), attr: $("#check_attr").is(":checked"),
+					   night: $("#check_night").is(":checked"), shop: $("#check_shop").is(":checked")}}
 	$.ajax({
 		type: 'POST',
 		url: "/create_group",
