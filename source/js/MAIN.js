@@ -33,12 +33,14 @@ var ratingAgreements = [0, 0, 0, 0, 0, 0]
 // index 0: Over 1000-1000, index 4: 50-0, index 5: notCare
 var reviewAgreements = [0, 0, 0, 0, 0, 0]
 
+var typesChosen;
+
 var placesList = [];
 var placesLoaded = 0;
 
 var favsList = [];
 
-var pingList = []
+var sentPingsList = []
 
 var inputHeight = 29;
 var currentMsgIndex;
@@ -47,6 +49,15 @@ var numQueued = 0;
 
 var socket = io();
 
+var searchTimer;
+var typingInterval = 300;
+
+var placeDetailHeight = 700
+var mymap;
+var marker;
+
+var searchPlace = null
+
 $(document).ready(function(){
 	$('#top-show-all').prop('checked', false)
 	$('#top-show-categories').prop('checked', false)
@@ -54,6 +65,69 @@ $(document).ready(function(){
 
 	$('#ego-radio').prop('checked', true)
 	$('#chat-radio').prop('checked', true)
+
+	$(".input-search").keyup(function(){
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(getSearchSuggestions, typingInterval);
+	})
+	$(".input-search").keydown(function(e){
+		if(e.keyCode == 13){
+			$('.place-detail').hide()
+			$('.overlay').fadeIn()
+			$.ajax({
+				type: 'POST',
+				url: '/search_place',
+				data: JSON.stringify({str: $('.input-search').val()}),
+				dataType: 'json',
+				contentType: 'application/json',
+				success: function(place){
+					if(place){
+						searchPlace = place
+						searchPlace.agree = []
+						searchPlace.disagree = []
+						for(var j = 0; j < members.length; j++){
+							var member = members[j]
+							var agree = (!member.top || member.top.includes(searchPlace.top)) && (member.rating == -1 || member.rating <= searchPlace.rating) && 
+										(!member.price || (member.price.min.length <= searchPlace.price && searchPlace.price <= member.price.max.length)) &&
+										(!member.reviews || member.reviews.min <= searchPlace.reviews)
+							if(member.reviews && member.reviews.max != 1001)
+								agree = agree && (searchPlace.reviews <= member.reviews.max)
+
+							if(agree)
+								searchPlace.agree.push({id: member.id, filename: member.filename, index: j})
+							else
+								searchPlace.disagree.push({id: member.id, filename: member.filename, index: j})
+						}
+						displayPlaceDetails(searchPlace)
+						$('.place-detail').fadeIn()
+					}
+				}
+			})
+		}
+		clearTimeout(searchTimer);
+	})
+
+	$('.overlay').click(function(e){
+		if(!$('.place-detail').is(e.target) && $('.place-detail').has(e.target).length === 0){
+        	$(this).fadeOut()
+        	searchPlace = null
+		}else if($('#place-detail-photo').is(e.target))
+			changeDetailImage()
+	})
+
+	$('#place-detail-photo').load(function(){
+		$('.map-area').width(Math.floor(600 - $('#place-detail-photo')[0].getBoundingClientRect().width))
+		window.dispatchEvent(new Event('resize'));
+	})
+
+	$('#close-detail').click(function(){
+		$('.overlay').fadeOut()
+		searchPlace = null
+	})
+
+	mymap = L.map('mapid').setView([50, -0.9], 13);
+	marker = L.marker([51.5, -0.09]).addTo(mymap);
+	mymap.scrollWheelZoom.disable();
 
 	$.ajax({
 		url: '/get_group_cdqs',
@@ -68,7 +142,12 @@ $(document).ready(function(){
 			userCDQ = data.user 
 			groupSize += data.group.length
 			members.unshift(userCDQ)
+			typesChosen = data.types;
 			compileMembersCDQ(members)
+
+			$("#user-img").html('<img src="profile_imgs/' + userCDQ.filename + '"/>')
+			$("#user-info").html('Howdy, ' + userCDQ.firstname)
+			$("#info-widget").fadeIn()
 
 			// set width of left
 			$('.bar-content').width(260 + (groupSize-1)*30 + 600 + 400)
@@ -102,6 +181,10 @@ $(document).ready(function(){
 			for(var i = 0; i < locCategories.length - 1; i++){
 				endHtml = ''
 				var category = locCategories[i]
+
+				if(!typesChosen[category])
+					continue;
+
 				var topKeyList = Object.keys(topAgreements[category])
 				svgHtml += `<g id='top-type-${category}'>`
 
@@ -119,6 +202,7 @@ $(document).ready(function(){
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
 										<image class="check-mark" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
+										<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 1'/>
 										</g>`
 						}else{
 							topAgreed++;
@@ -131,6 +215,7 @@ $(document).ready(function(){
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
 										<image class="check-mark" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
+										<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 1'/>
 										</g>`
 						}
 					}else{
@@ -145,6 +230,7 @@ $(document).ready(function(){
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
 										<image class="check-mark" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
+										<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 1'/>
 										</g>`
 						}else{		
 							endHtml += `<g id='top-group-${top}' style='opacity: 0'>
@@ -156,6 +242,7 @@ $(document).ready(function(){
 										<g class='top-members-sel' style="opacity: 0; transition: 0.2s"></g>
 										<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${j*26 + yPosition}'/>
 										<image class="check-mark" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 0'/>
+										<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${j*26 + yPosition + 6}' height='13px' width='19px' style='opacity: 1'/>
 										</g>`
 						}
 						notAdded++
@@ -209,18 +296,19 @@ $(document).ready(function(){
 					if(topList[top] == 0)
 						clearDisagreedTop();
 
-					$('#top-group-' + top + ' image').css('opacity', 0)
+					$('#top-group-' + top + ' .check-mark').css('opacity', 0)
 					for(var i = 1; i < members.length; i++){
-						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*i) + ')').css('opacity', 0)
+						$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*i) + ')').css({'opacity': 0, 'cursor': 'auto'})
 					}
 
 					getLocations()
 				}else{
 					if($('#top-no-pref').is(":checked")){
 						$('.check-box').css('fill', '#FFF')
+						$('.check-nopref').css('opacity', 0)
 						$('#top-no-pref').prop('checked', false)
-						updateTopAgreementAll(-1, false)
 						socket.emit('top change all', {change: -1})
+						updateTopAgreementAll(-1, false)
 						userCDQ.top = []
 
 						// todo
@@ -233,12 +321,15 @@ $(document).ready(function(){
 					socket.emit('top change', {topId: topId, change: 1})
 					updateTopAgreement(category, top)
 
-					$('#top-group-' + top + ' image').css('opacity', 1)
+					$('#top-group-' + top + ' .check-mark').css('opacity', 1)
 					for(var i = 1; i < members.length; i++){
 						var member = members[i]
 						var isSelected = member.top === false || member.top.indexOf(topId) != -1
-						if(!isSelected)
-							$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*i) + ')').css('opacity', 1)
+						if(!isSelected){
+							$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*i) + ')').css('opacity', 1)
+							if($('#top-show-all').is(':checked'))
+								$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*i) + ')').css('cursor', 'pointer')
+						}
 					}
 
 					getLocations()
@@ -253,17 +344,23 @@ $(document).ready(function(){
 				$('#top-svg .agreement-rect').addClass('disagreed-rect')
 			}
 
+			var allNoPref = true
+
 			if(members[0].top !== false){
+				allNoPref = false
 				$('#top-no-pref').prop('checked', false)
 				var locCategories = Object.keys(topAgreements)
 				for(i = 0; i < locCategories.length - 1; i++){
 					var category = locCategories[i]
+					if(!typesChosen[category])
+                   		continue;
 					var topKeyList = Object.keys(topAgreements[category])
 					for(j = 0; j < topKeyList.length; j++){
 						var top = topKeyList[j]
 						var topId = category + "_" + top
+						$('#top-group-' + top + ' .check-nopref').css('opacity', 0)
 						if(members[0].top.indexOf(topId) != -1){
-							$('#top-group-' + top + ' image').css('opacity', 1)
+							$('#top-group-' + top + ' .check-mark').css('opacity', 1)
 							if(topAgreements[category][top] + topAgreements.notCare == groupSize)
 								$('#top-group-' + top + ' > .check-box').css('fill', '#1F77B5')
 							else
@@ -279,6 +376,8 @@ $(document).ready(function(){
 			var locCategories = Object.keys(topAgreements)
 			for(i = 0; i < locCategories.length - 1; i++){
 				var category = locCategories[i]
+				if(!typesChosen[category])
+                    continue;
 				var topKeyList = Object.keys(topAgreements[category])
 				for(j = 0; j < topKeyList.length; j++){
 					var top = topKeyList[j]
@@ -288,16 +387,55 @@ $(document).ready(function(){
 					for(k = 1; k < members.length; k++){
 						var member = members[k]
 						var isSelected = member.top === false || member.top.indexOf(topId) != -1
+						allNoPref = allNoPref & !member.top
 						groupHtml += `<rect class='criteria-rect' x='${201 + (k-1)*30}' y='${$('#top-group-' + top + ' > #right-rect').attr('y')}' width='30' height='26' 
 											style='fill:${colors[k]}; ${isSelected ? '' : 'opacity: 0'}'/>
-									  <circle id='${'ping-top-' + topId + '-' + member.id}' class='test-ping' cx='${201 + (k-1)*30 + 15}' 
-									  		  cy='${$('#top-group-' + top + ' > #right-rect').attr('y')/1 + 13}' r='5' 
-									 		  style='fill:#1f77b5; ${(isSelected || !userSelected) ? 'opacity: 0' : ''}'/>`
-
+									  <image id='ping-top-${topId}-${member.id}' class='test-ping' href='img/CDQ_ping.png'
+									  		 x='${201 + (k-1)*30 + 7}' y='${$('#top-group-' + top + ' > #right-rect').attr('y')/1 + 6}'
+									  		 width='14px' height='14px'
+									 		 style='${(isSelected || !userSelected) ? 'opacity: 0' : ''}'/>`
 					}
 					$('#top-group-' + top + ' > .top-members-sel').html(groupHtml)
 				}
 			}
+
+			if(allNoPref){
+				var locCategories = Object.keys(topAgreements)
+				var totalAdded = 0;
+				var added = 0;
+				for(i = 0; i < locCategories.length - 1; i++){
+					var category = locCategories[i]
+	                if(!typesChosen[category])
+	                    continue;
+					if(added > 0 || totalAdded > 0){
+						totalAdded += added;
+						if($('#top-type-' + category).attr('transform'))
+							$('#top-type-' + category).attr('transform', $('#top-type-' + category).attr('transform') + ' translate(0, ' + totalAdded*26 + ')')
+						else
+							$('#top-type-' + category).attr('transform', 'translate(0, ' + totalAdded*26 + ')')
+						added = 0;
+					}
+					var topKeyList = Object.keys(topAgreements[category])
+					for(j = 0; j < topKeyList.length; j++){
+						var top = topKeyList[j]
+						if(topAgreements[category][top] == 0){
+							$('#top-group-' + top).css('opacity', 1)
+							added++;
+						}else if(added > 0){
+							$('#top-group-' + top).attr('transform', '')
+						}
+					}
+					if(added > 0){
+						$('#top-type-'+category+' > #top-type-label').attr('height', added*26 + $('#top-type-'+category+' > #top-type-label').attr('height')/1)
+						$('#top-type-'+category+' .category-label').show()
+						$('#top-disagreed-border').attr('height', added*26 + $('#top-disagreed-border').attr('height')/1)
+						$('#top-svg').attr('height', added*26 + $('#top-svg').height()/1)
+					}
+				}
+				$('#top-show-categories').attr('checked', true)
+			}
+
+
 
 			// PRICE RANGE
 			// set width of the prices svg
@@ -352,30 +490,19 @@ $(document).ready(function(){
 			// display preferences of each member for price range
 			var membersSelHtml = ``
 			for(i = 1; i < members.length; i++){
+				membersSelHtml += `<rect class='criteria-rect' x='${171 + i*30}' y='${6}' width='30' height='${4*26}' fill-opacity='0' stroke-opacity='0.1'/>`
 				for(j = 0; j < 4; j++){
-					membersSelHtml += `<rect class='criteria-rect' x='${171 + i*30}' y='${6}' width='30' height='${4*26}' fill-opacity='0' stroke-opacity='0.1'/>
-									   <circle id='${'ping-price-' + priceIndexToString(j).length + '-' + members[i].id}' class='test-ping' cx='${201 + (i-1)*30 + 15}' 
-								  		 	   cy='${j*26 + 18}' r='5' style='fill:#1f77b5; opacity: ${j >= maxIndex && j <= minIndex ? 1 : 0}'/>`
+					membersSelHtml += `<image id='${'ping-price-' + priceIndexToString(j).length + '-' + members[i].id}' class='test-ping' href='img/CDQ_ping.png' 
+									   		  x='${201 + (i-1)*30 + 7}' y='${j*26 + 12}' height='14px' width='14px' style='opacity: ${j >= maxIndex && j <= minIndex ? 1 : 0}'/>`
 				}
 				if(members[i].price){
-					membersSelHtml += `<rect x='${176 + i*30}' y='${6 + maxIndex*26}' width='20' fill='${colors[i]}' 
+					membersSelHtml += `<rect x='${176 + i*30}' y='${6 + stringToPriceIndex(members[i].price.max)*26}' width='20' fill='${colors[i]}' 
 											 height='${(stringToPriceIndex(members[i].price.min) - stringToPriceIndex(members[i].price.max) + 1) * 26}'/>`
 				}else
 					membersSelHtml += `<rect x='${176 + i*30}' y='${6}' width='20' height='${4*26}' fill='${colors[i]}'/>`
 			}
 			$('#price-members-sel').html(membersSelHtml)
 
-
-			// TESTING PINGS
-			$('.test-ping').click(function(){
-				if($(this).css('opacity') === '1' && $(this).parent().css('opacity') === '1'){
-					var data = $(this).attr('id').split('-')
-					if(data[1] === 'price')
-						data[2] = '$'.repeat(data[2])
-					console.log('Sending ping to ' + data[3] + ' to choose ' + data[2] + ' in ' + data[1])
-					socket.emit('new ping', {id: data[3], category: data[1], option: data[2]})
-				}
-			})
 
 
 			// RATINGS
@@ -415,6 +542,24 @@ $(document).ready(function(){
 				$('#rating-sel-area').attr('height', (minToRatingIndex(members[0].rating) + 1)*26)
 				$('#rating-handle').attr('y', 1 + (minToRatingIndex(members[0].rating) + 1)*26)
 			}
+
+			// display preferences of each member for price range
+			var userRating = userCDQ.rating == -1 ? 4 : minToRatingIndex(userCDQ.rating)
+			var membersSelHtml = ``
+			for(i = 1; i < members.length; i++){
+				membersSelHtml += `<rect class='criteria-rect' x='${171 + i*30}' y='${6}' width='30' height='${5*26}' fill-opacity='0' stroke-opacity='0.1'/>`
+				for(j = 0; j < 5; j++){
+					membersSelHtml += `<image id='${'ping-rating-' + minToRatingIndex(j) + '-' + members[i].id}' class='test-ping' href='img/CDQ_ping.png' 
+									   		  x='${201 + (i-1)*30 + 7}' y='${j*26 + 12}' height='14px' width='14px' style='opacity: ${j <= userRating ? 1 : 0}'/>`
+				}
+				if(members[i].rating){
+					membersSelHtml += `<rect x='${176 + i*30}' y='${6}' width='20' fill='${colors[i]}' 
+											 height='${(minToRatingIndex(members[i].rating) + 1) * 26}'/>`
+				}else
+					membersSelHtml += `<rect x='${176 + i*30}' y='${6}' width='20' height='${5*26}' fill='${colors[i]}'/>`
+			}
+			$('#rating-members-sel').html(membersSelHtml)
+
 
 
 			// REVIEWS
@@ -471,9 +616,12 @@ $(document).ready(function(){
 				$('#reviews-svg .agreement-rect').addClass('disagreed-rect')
 			}
 
+			var minIndex = 5
+			var maxIndex = 0
+
 			if(members[0].reviews){
-				var minIndex = reviewToIndex(members[0].reviews.min)
-				var maxIndex = reviewToIndex(members[0].reviews.max)
+				minIndex = reviewToIndex(members[0].reviews.min)
+				maxIndex = reviewToIndex(members[0].reviews.max)
 				$('#review-no-pref').prop('checked', false)
 				$('#review-sel-area').css('fill', '#AEC7E8')
 				$('#review-sel-area-agreed').css('fill', '#1F77B5')
@@ -481,6 +629,111 @@ $(document).ready(function(){
 				$('#review-top-handle').attr('y', 1 + maxIndex*26)
 				$('#review-bot-handle').attr('y', 1 + minIndex*26)
 			}
+
+			// display preferences of each member for price range
+			var membersSelHtml = ``
+			for(i = 1; i < members.length; i++){
+				membersSelHtml += `<rect class='criteria-rect' x='${171 + i*30}' y='${6}' width='30' height='${4*26}' fill-opacity='0' stroke-opacity='0.1'/>`
+				for(j = 0; j < 5; j++){
+					membersSelHtml += `<image id='${'ping-review-' + indexToReview(j) + '-' + members[i].id}' class='test-ping' href='img/CDQ_ping.png' 
+									   		  x='${201 + (i-1)*30 + 7}' y='${j*26 + 12}' height='14px' width='14px' style='opacity: ${j >= maxIndex && j < minIndex ? 1 : 0}'/>`
+				}
+				if(members[i].price){
+					membersSelHtml += `<rect x='${176 + i*30}' y='${6 + reviewToIndex(members[i].reviews.max)*26}' width='20' fill='${colors[i]}' 
+											 height='${(reviewToIndex(members[i].reviews.min) - reviewToIndex(members[i].reviews.max)) * 26}'/>`
+				}else
+					membersSelHtml += `<rect x='${176 + i*30}' y='${6}' width='20' height='${5*26}' fill='${colors[i]}'/>`
+			}
+			$('#review-members-sel').html(membersSelHtml)
+
+
+			// TESTING PINGS
+			$('.test-ping').click(function(){
+				if($(this).css('opacity') === '1' && $(this).parent().css('opacity') === '1' && $(this).attr('href') !== 'img/CDQ_ping_TBD.png'){
+					var data = $(this).attr('id').split('-')
+					if(data[1] === 'price')
+						data[2] = '$'.repeat(data[2])
+
+					var id = data[3]
+					var category = data[1]
+					var option = data[2]
+
+					$(this).attr('href', 'img/CDQ_ping_TBD.png')
+					var receiverIndex = members.findIndex(member => member.id === id)
+
+					var classStr = 'ping-' + category + '-'
+					var optionStr = option
+					var descriptionHtml = ''
+					if(category === 'top'){
+						classStr += option
+						optionStr = topNames[option.split('_')[1]]
+						descriptionHtml = `in <b>Place Categories</b>`
+					}else if(category === 'price'){
+						classStr += option.length
+						descriptionHtml += `in <b>Price Range</b>`
+					}else if(category === 'rating'){
+						classStr += option
+						descriptionHtml += `in <b>Ratings</b>`
+					}else if(category === 'review'){
+						classStr += option
+						if(option <= members[receiverIndex].reviews.min)
+							option = indexToReview(reviewToIndex(option) + 1)
+						if(option == 1001)
+							optionStr = 'Over 1000'
+						else
+							optionStr = option
+						descriptionHtml += `in <b>Number of Reviews</b>`
+					}
+					descriptionHtml = `<b>${optionStr}</b> ${descriptionHtml}`
+					$('.ping-tooltip').html(`You asked ${members[receiverIndex].firstname[0]}.${members[receiverIndex].lastname[0]}. to agree on "${optionStr}"`)
+
+					$('#sent-pings').prepend(`<div class='ping-entry ${classStr}' data-receiver='${id}'>
+												<div class='msg-pic-section'><img src='profile_imgs/${members[receiverIndex].filename}' style='border-color:${colors[receiverIndex]}'/></div>
+												<div class='ping-text-section'>
+													<h1>You asked <b style='color:${colors[receiverIndex]}'>${members[receiverIndex].firstname} ${members[receiverIndex].lastname}</b> </br>
+														to include ${descriptionHtml}.</h1>	
+													<h1 style='margin-top: 10px'> <b>Status:</b></br>
+														 <span class='status'>Not accepted or rejected yet</span></h1>						
+												</div>
+											</div>`);
+					$('#sent-pings .nothing-msg').hide()
+					socket.emit('new ping', {id: id, category: category, option: option})
+				}
+			})
+
+			$('.test-ping').mouseover(function(e){
+				if($(this).css('opacity') === '1' && $(this).parent().css('opacity') === '1'){
+					var data = $(this).attr('id').split('-')
+					var type = data[1]
+					var member = members.find(member => member.id === data[3])
+					var name = member.firstname[0] + '.' + member.lastname[0] + '.'
+					var option = ''
+					if(type === 'top'){
+						option = topNames[data[2].split('_')[1]]
+					}else if(type === 'price'){
+						option = '$'.repeat(data[2]/1)
+					}else if(type === 'rating'){
+						option = data[2]
+					}else if(type === 'review'){
+						if(member.reviews.min >= data[2])
+							option = indexToReview(reviewToIndex(data[2]/1) + 1)
+						else if(member.reviews.max < data[2])
+							option = data[2]
+						if(option == 1001)
+							option = "Over 1000"
+					}
+
+					if($(this).attr('href') === 'img/CDQ_ping.png')
+						$('.ping-tooltip').html(`Ask ${name} to agree on "${option}"`)
+					else
+						$('.ping-tooltip').html(`You asked ${name} to agree on "${option}"`)
+					$('.ping-tooltip').css({left: e.pageX + 15 + 'px', top: e.pageY + 'px'})
+					$('.ping-tooltip').css('visibility', 'visible')
+				}
+			}).mouseout(function(){
+				$('.ping-tooltip').css('visibility', 'hidden')
+			})
+
 
 			// PLACE LIST: get data, store data and display
 			getFavoritesAndLocations()
@@ -495,6 +748,10 @@ $(document).ready(function(){
 					$('#favs-container').show()
 					$('#load-more-places').hide()
 				}
+				if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
+					$('#middle > .column-content').css('overflow-y', 'scroll')
+				else
+					$('#middle > .column-content').css('overflow-y', 'hidden')
 			})
 
 			// TEST PINGS
@@ -559,6 +816,17 @@ $(document).ready(function(){
 					if($('#right > .column-content')[0].scrollHeight > $('#right > .column-content').height())
 						$('#right > .column-content').css('overflow-y', 'scroll')
 					$("#right .column-content").scrollTop($("#right .column-content")[0].scrollHeight)
+					if(windowHeight < 700){
+						var newPhotoHeight = 230 - (700 - windowHeight)
+						$('#place-detail-photo').css('height', newPhotoHeight)
+						$('#mapid').css('height', newPhotoHeight)
+						$('.place-detail').css({height: 470 + newPhotoHeight, top: 0})
+					}else{
+						var diff = windowHeight - 700
+						$('#place-detail-photo').css('height', 230)
+						$('#mapid').css('height', 230)
+						$('.place-detail').css({height: 700, top: diff/2})
+					}
 				}
 			})
 		}
@@ -591,6 +859,19 @@ $(document).ready(function(){
 
 	$(window).resize(function(){
 		var windowHeight = $(window).height();
+
+		if(windowHeight < 700){
+			var newPhotoHeight = 230 - (700 - windowHeight)
+			$('#place-detail-photo').css('height', newPhotoHeight)
+			$('#mapid').css('height', newPhotoHeight)
+			$('.place-detail').css({height: 470 + newPhotoHeight, top: 0})
+		}else{
+			var diff = windowHeight - 700
+			$('#place-detail-photo').css('height', 230)
+			$('#mapid').css('height', 230)
+			$('.place-detail').css({height: 700, top: diff/2})
+		}
+
 		$('#middle').height(windowHeight - 110)
 		$('#right').height(windowHeight - 110)
 		$('#left').height(windowHeight - 110)
@@ -729,7 +1010,7 @@ function getLocations(){
 							agreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
 						}else{
 							entry.disagree.push({id: member.id, filename: member.filename, index: j})
-							disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+							disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}" data-userid='${member.id}' data-placeid='${entry.id}'>`
 						}
 					}
 
@@ -737,10 +1018,10 @@ function getLocations(){
 					var left = entry.rating/1
 					for(j = 0; j < 5; j++){
 						if(left == 0.5){
-							ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+							ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
 							left -= 0.5
 						}else if(left == 0)
-							ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+							ratingHtml += "<span><img src='img/List_star_0.png'></span>"
 						else{
 							ratingHtml += "<span><img src='img/List_star_1.png'></span>"
 							left--;
@@ -748,10 +1029,10 @@ function getLocations(){
 
 					}
 
-					entry.html = `<div id='place-${entry.id}' class='place-entry'>
+					entry.html = `<div id='place-${entry.id}' class='place-entry' style='cursor: pointer'>
 										<div class='place-img-section'>
 											<img src='${entry.photo}0.jpg'/>
-											<input id="check-place-${entry.id}" class="check-place" type='checkbox'><label for="fav-${entry.id}"> Add this to group archive </label>
+											<img id="check-place-${entry.id}" class='bookmark-button' src="img/LIST_favoff.png">
 										</div>
 										<div class='place-info-section'>
 											<h1>${topNames[entry.top.split('_')[1]]}</h1>
@@ -762,20 +1043,20 @@ function getLocations(){
 											</div>
 											<h2>${entry.address} | ...</h2>
 											<div class='place-agreement-info'>
-												<div class='place-disagrees'>
-													<h2><b> Disagree: </b></h2>
-													<div class='img-list'>${disagreeImgs}</div>
-												</div>
 												<div class='place-agrees'>
-													<h2><b> Agree: </b></h2>
+													<h2><b> Agreed: </b></h2>
 													<div class='img-list'>${agreeImgs}</div>
+												</div>
+												<div class='place-disagrees'>
+													<h2><b> Disagreed: </b></h2>
+													<div class='img-list'>${disagreeImgs}</div>
 												</div>
 											</div>
 										</div>
 									</div>`
 					placesList.push(entry)
 				}
-				$('#num-ego-cen').html('(' + placesList.length + ' places)')
+				$('#num-ego-cen').html(placesList.length + ' places')
 
 				// LOAD MORE PLACES
 				if(placesList.length == 0){
@@ -794,22 +1075,45 @@ function getLocations(){
 						$('#places-list').html(placesList.map(place => place.html).join(''))
 					}
 
-					$(".check-place").change(function(){
+					$('#places-list .place-entry').click(function(e){
+						if(!$('.place-disagrees img').is(e.target) && !$('.bookmark-button').is(e.target))
+							getAndDisplayPlaceDetails($(this).attr('id').slice(6), 'places')
+					})
+
+					$('#places-list .place-entry:first-child .place-agreement-info').append(`<p style='margin: 0; font-size: 12px; color: #d21c5d'>Tip: You can click a profile of those who disagree to "ping" this location.</p>`)
+
+					setCandidatePingInteraction('places')
+
+					$("#places-list .bookmark-button").click(function(){
 						var id = $(this).attr("id").slice(12,)
-						if($(this).is(":checked")){
+						if($(this).attr('src') === 'img/LIST_favoff.png'){
 							socket.emit('add fav', id)
+							$(this).attr('src', 'img/LIST_favon.png')
+							$('.ping-tooltip').html(`Remove this place from Group Bookmark`)
 						}else{
 							socket.emit('remove fav', id)
 							for(var j = 0; j < favsList.length; j++){
 								if(favsList[j].id === id){
 									favsList.splice(j, 1)
 									$("#fav-" + id).remove();
-									$("#place-" + id + " .check-place").prop("checked", false)
-									$('#num-fav').html('(' + favsList.length + ' places)')
+									$(this).attr('src', 'img/LIST_favoff.png')
+									$('.ping-tooltip').html(`Add this place from Group Bookmark`)
+									$('#num-fav').html(favsList.length + ' places')
 									break;
 								}
 							}
 						}
+					})
+
+					$('#places-list .bookmark-button').mouseover(function(e){
+						if($(this).attr('src') === 'img/LIST_favon.png')
+							$('.ping-tooltip').html(`Remove this place from Group Bookmark`)
+						else
+							$('.ping-tooltip').html(`Add this place from Group Bookmark`)
+						$('.ping-tooltip').css({left: e.pageX + 15 + 'px', top: e.pageY + 'px'})
+						$('.ping-tooltip').css('visibility', 'visible')
+					}).mouseout(function(){
+						$('.ping-tooltip').css('visibility', 'hidden')
 					})
 
 					if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
@@ -818,8 +1122,12 @@ function getLocations(){
 						$('#middle > .column-content').css('overflow-y', 'hidden')
 				}
 
-				for(var j = 0; j < favsList.length; j++)
-					$("#place-" + favsList[j].id + " .check-place").prop("checked", true);
+				for(var j = 0; j < favsList.length; j++){
+					if(favsList[j].user !== userCDQ.id)
+						$("#place-" + favsList[j].id + " .bookmark-button").remove()
+					else
+						$("#place-" + favsList[j].id + " .bookmark-button").attr('src', 'img/LIST_favon.png')
+				}
 			}
 		}
 	})
@@ -850,7 +1158,7 @@ function getFavoritesAndLocations(){
 						agreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
 					}else{
 						entry.disagree.push({id: member.id, filename: member.filename, index: j})
-						disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}">`
+						disagreeImgs += `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[j]}" data-userid='${member.id}' data-placeid='${entry.id}'>`
 					}
 				}
 
@@ -858,10 +1166,10 @@ function getFavoritesAndLocations(){
 				var left = entry.rating/1
 				for(j = 0; j < 5; j++){
 					if(left == 0.5){
-						ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+						ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
 						left -= 0.5
 					}else if(left == 0)
-						ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+						ratingHtml += "<span><img src='img/List_star_0.png'></span>"
 					else{
 						ratingHtml += "<span><img src='img/List_star_1.png'></span>"
 						left--;
@@ -869,10 +1177,10 @@ function getFavoritesAndLocations(){
 
 				}
 
-				entry.html = `<div id='fav-${entry.id}' class='place-entry'>
+				entry.html = `<div id='fav-${entry.id}' class='place-entry' style='cursor: pointer'>
 									<div class='place-img-section'>
 										<img src='${entry.photo}0.jpg'/>
-										<input id="check-fav-${entry.id}" class="check-fav" type='checkbox' checked><label for="check-fav-${entry.id}"> Add this to group archive </label>
+										${entry.user === userCDQ.id ? '<img id="check-fav-' + entry.id + '" class="bookmark-button" src="img/LIST_favon.png">' : ''}
 									</div>
 									<div class='place-info-section'>
 										<h1>${topNames[entry.top.split('_')[1]]}</h1>
@@ -883,20 +1191,20 @@ function getFavoritesAndLocations(){
 										</div>
 										<h2>${entry.address} | ...</h2>
 										<div class='place-agreement-info'>
-											<div class='place-disagrees'>
-												<h2><b> Disagree: </b></h2>
-												<div class='img-list'>${disagreeImgs}</div>
-											</div>
 											<div class='place-agrees'>
-												<h2><b> Agree: </b></h2>
+												<h2><b> Agreed: </b></h2>
 												<div class='img-list'>${agreeImgs}</div>
+											</div>
+											<div class='place-disagrees'>
+												<h2><b> Disagreed: </b></h2>
+												<div class='img-list'>${disagreeImgs}</div>
 											</div>
 										</div>
 									</div>
 								</div>`
 				favsList.push(entry)
 			}
-			$('#num-fav').html('(' + favsList.length + ' places)')
+			$('#num-fav').html(favsList.length + ' places')
 
 			// LOAD MORE PLACES
 			if(favsList.length == 0){
@@ -904,7 +1212,7 @@ function getFavoritesAndLocations(){
 				$('#middle > .column-content').css('overflow-y', 'hidden')
 			}else{
 				favsList.sort(placeListSort)
-				$('#favs-list').html(favsList.slice(0,20).map(place => place.html).join(''))
+				$('#favs-list').html(favsList.map(place => place.html).join(''))
 
 				if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
 					$('#middle > .column-content').css('overflow-y', 'scroll')
@@ -912,18 +1220,35 @@ function getFavoritesAndLocations(){
 					$('#middle > .column-content').css('overflow-y', 'hidden')
 			}
 
-			$(".check-fav").change(function(){
+			$('#favs-list .place-entry').click(function(e){
+				if(!$('.place-disagrees img').is(e.target) && !$('.bookmark-button').is(e.target))
+					getAndDisplayPlaceDetails($(this).attr('id').slice(4), 'favs')
+			})
+
+			setCandidatePingInteraction('favs')
+
+			$("#favs-list .bookmark-button").click(function(){
 				var id = $(this).attr("id").slice(10,)
 				socket.emit('remove fav', id)
 				for(var j = 0; j < favsList.length; j++){
 					if(favsList[j].id === id){
 						favsList.splice(j, 1)
 						$("#fav-" + id).remove();
-						$("#place-" + id + " .check-place").prop("checked", false)
-						$('#num-fav').html('(' + favsList.length + ' places)')
+						$("#place-" + id + " .bookmark-button").attr('src', 'img/LIST_favoff.png')
+						$('#num-fav').html(favsList.length + ' places')
+						if($('#middle > .column-content')[0].scrollHeight <= $('#middle > .column-content').height())
+							$('#middle > .column-content').css('overflow-y', 'hidden')
 						break;
 					}
 				}
+			})
+
+			$('#favs-list .bookmark-button').mouseover(function(e){
+				$('.ping-tooltip').html(`Remove this place from Group Bookmark`)
+				$('.ping-tooltip').css({left: e.pageX + 15 + 'px', top: e.pageY + 'px'})
+				$('.ping-tooltip').css('visibility', 'visible')
+			}).mouseout(function(){
+				$('.ping-tooltip').css('visibility', 'hidden')
 			})
 
 			getLocations();
@@ -964,10 +1289,10 @@ function changeMemberAgreement(member, isNew){
 		var left = place.rating/1
 		for(j = 0; j < 5; j++){
 			if(left == 0.5){
-				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
 				left -= 0.5
 			}else if(left == 0)
-				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
 			else{
 				ratingHtml += "<span><img src='img/List_star_1.png'></span>"
 				left--;
@@ -979,7 +1304,7 @@ function changeMemberAgreement(member, isNew){
 			place.html = `<div class='place-entry'>
 							<div class='place-img-section'>
 								<img src='${place.photo}0.jpg'/>
-								<input type='checkbox'><span> Add this to group archive </span>
+								<input type='checkbox'><span> Add this to group bookmark </span>
 							</div>
 							<div class='place-info-section'>
 								<h1>${topNames[place.top.split('_')[1]]}</h1>
@@ -990,20 +1315,21 @@ function changeMemberAgreement(member, isNew){
 								</div>
 								<h2>${place.address} | ...</h2>
 								<div class='place-agreement-info'>
-									<div class='place-disagrees'>
-										<h2><b> Disagree: </b></h2>
-										<div class='img-list'>${place.disagree.map(entry => `<img src="profile_imgs/${entry.filename}" style="border-color: ${colors[entry.index]}">`).join('')}</div>
-									</div>
 									<div class='place-agrees'>
-										<h2><b> Agree: </b></h2>
+										<h2><b> Agreed: </b></h2>
 										<div class='img-list'>${place.agree.map(entry => `<img src="profile_imgs/${entry.filename}" style="border-color: ${colors[entry.index]}">`).join('')}</div>
+									</div>
+									<div class='place-disagrees'>
+										<h2><b> Disagreed: </b></h2>
+										<div class='img-list'>${place.disagree.map(entry => `<img src="profile_imgs/${entry.filename}" style="border-color: ${colors[entry.index]}" data-placeid="${place.id}" data-userid='${member.id}'>`).join('')}</div>
 									</div>
 								</div>
 							</div>
 						</div>`
 		}
 	}
-	$('#places-list').html(placesList.map(place => place.html).join(''))
+	$('#places-list').html(placesList.slice(0, placesLoaded).map(place => place.html).join(''))
+	setCandidatePingInteraction('places')
 }
 
 
@@ -1025,9 +1351,11 @@ function getPings(){
 		url: "/get_pings",
 		dataType: 'json',
 		success: function(data){
+			var receivedPings = 0;
+			var sentPings = 0;
 			for(var i = 0; i < data.length; i++){
 				var ping = data[i]
-				if(ping.ping_accepted == null){
+				if(ping.ping_accepted == null && ping.ping_from_id !== userCDQ.id){
 					ping.ping_cdq_action = JSON.parse(ping.ping_cdq_action)
 					var category = Object.keys(ping.ping_cdq_action)[0]
 					var option = ping.ping_cdq_action[category]
@@ -1038,27 +1366,262 @@ function getPings(){
 					var descriptionHtml = ''
 					if(category === 'top'){
 						classStr += option
-						descriptionHtml += `<b>${topNames[option.split('_')[1]]}</b> in your <b>Place Categories</b></h1>`
+						descriptionHtml += `<b>${topNames[option.split('_')[1]]}</b> in your <b>Place Categories</b>`
 					}else if(category === 'price'){
 						classStr += option.length
-						descriptionHtml += `<b>${option}</b> in your <b>Price Range</b></h1>`
+						descriptionHtml += `<b>${option}</b> in your <b>Price Range</b>`
+					}else if(category === 'rating'){
+						classStr += option
+						descriptionHtml += `<b>${option}</b> in your <b>Ratings</b>`
+					}else if(category === 'review'){
+						classStr += option
+						if(option == 1001)
+							descriptionHtml += `<b>Over 1000</b> in your <b> Number of Reviews</b>`
+						else
+							descriptionHtml += `<b>${option}</b> in your <b> Number of Reviews</b>`
 					}
 
-					$('#ping-container').append(`<div class='ping-entry ${classStr}' data-sender='${ping.ping_from_id}'>
+					$('#received-pings').prepend(`<div class='ping-entry ${classStr}' data-sender='${ping.ping_from_id}'>
 													<div class='msg-pic-section'><img src='profile_imgs/${members[senderIndex].filename}' style='border-color:${colors[senderIndex]}'/></div>
 													<div class='ping-text-section'>
-														<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> asked you to include </br>
-														${descriptionHtml}
-														<button class='accept-ping-btn' onclick="acceptPing('${category}', '${option}')">Accept</button>
-														<button class='accept-ping-btn' onclick="rejectPing('${ping.ping_from_id}', '${category}', '${option}')">Reject</button>												
+														<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> pinged you to: </br>
+															include ${descriptionHtml}.</h1>
+														<div>
+															<span class='btn' onclick="acceptPing('${category}', '${option}')">ACCEPT</span>
+															<span class='btn' onclick="rejectPing('${ping.ping_from_id}', '${category}', '${option}')">REJECT</span>
+														</div>										
 													</div>
 												</div>`);
+					receivedPings++
+				}else if(ping.ping_from_id === userCDQ.id){
+					ping.ping_cdq_action = JSON.parse(ping.ping_cdq_action)
+					var category = Object.keys(ping.ping_cdq_action)[0]
+					var option = ping.ping_cdq_action[category]
+
+					var receiverIndex = members.findIndex(member => member.id === ping.ping_to_id)
+
+					var classStr = 'ping-' + category + '-'
+					var descriptionHtml = ''
+					if(category === 'top'){
+						classStr += option
+						descriptionHtml += `<b>${topNames[option.split('_')[1]]}</b> in <b>Place Categories</b>`
+					}else if(category === 'price'){
+						classStr += option.length
+						descriptionHtml += `<b>${option}</b> in <b>Price Range</b>`
+					}else if(category === 'rating'){
+						classStr += option
+						descriptionHtml += `<b>${option}</b> in <b>Ratings</b>`
+					}else if(category === 'review'){
+						classStr += option
+						if(option == 1001)
+							descriptionHtml += `<b>Over 1000</b> in <b> Number of Reviews</b>`
+						else
+							descriptionHtml += `<b>${option}</b> in <b> Number of Reviews</b>`
+					}
+
+					var status;
+					if(ping.ping_accepted == null){
+						status = 'Not accepted or rejected yet'
+						$('[id^=' + classStr + '-' + ping.ping_to_id.split('@')[0] + ']').attr('href', 'img/CDQ_ping_TBD.png')
+					}else if(ping.ping_accepted == 1)
+						status = 'Accepted'
+					else
+						status = 'Rejected'
+
+					$('#sent-pings').prepend(`<div class='ping-entry ${classStr}' data-receiver='${ping.ping_to_id}'>
+													<div class='msg-pic-section'><img src='profile_imgs/${members[receiverIndex].filename}' style='border-color:${colors[receiverIndex]}'/></div>
+													<div class='ping-text-section'>
+														<h1>You asked <b style='color:${colors[receiverIndex]}'>${members[receiverIndex].firstname} ${members[receiverIndex].lastname}</b> </br>
+															to include ${descriptionHtml}.</h1>
+														<h1 style='margin-top: 10px'> <b>Status:</b> </br>
+															 <span class='status'>${status}</span></h1>								
+													</div>
+												</div>`);
+					sentPingsList.push({id: ping.ping_to_id, category: category, option: option, accepted: ping.ping_accepted});
+					sentPings++;
 				}
 			}
-			if($('#right > .column-content')[0].scrollHeight > $('#right > .column-content').height())
-				$('#right > .column-content').css('overflow-y', 'scroll')
-			if(data.length > 0)
-				$('#ping-container .nothing-msg').hide()
+			if(receivedPings > 0){
+				$('#received-pings .nothing-msg').hide()
+				$('#ping-unanswered').html('(' + receivedPings + ' unanswered)')
+			}
+			if(sentPings > 0)
+				$('#sent-pings .nothing-msg').hide()
 		}
 	})
+}
+
+function getSearchSuggestions(){
+	$.ajax({
+		type: 'POST',
+		url: '/get_search_suggestions',
+		data: JSON.stringify({str: $('.input-search').val()}),
+		dataType: 'json',
+		contentType: 'application/json',
+		success: function(list){
+			$('#search-suggestions').html(list.map(str => '<option value=' + str + '>').join(''))
+		}
+	})
+}
+
+function setCandidatePingInteraction(type){
+	$('#' + type + '-list .place-disagrees img').click(function(){
+		var placeID = $(this).data('placeid')
+		var memberID = $(this).data('userid')
+		var place = placesList.find(entry => entry.id === placeID)
+		var member = members.find(entry => entry.id === memberID)
+		var pingInfo = {}
+		if(!member.top.includes(place.top))
+			pingInfo.top = place.top
+		if(place.price > member.price.max.length || place.price < member.price.min.length)
+			pingInfo.price = place.price
+		if(place.rating/1 < member.rating)
+			pingInfo.rating = place.rating
+
+		var placeReviews = {}
+		if(place.reviews >= 1000) 
+			placeReviews = {max: 1001, min: 1000}
+		else if(place.reviews >= 500)
+			placeReviews = {max: 1000, min: 500}
+		else if(place.reviews >= 100)
+			placeReviews = {max: 500, min: 100}
+		else if(place.reviews >= 50)
+			placeReviews = {max: 100, min: 50}
+		else
+			placeReviews = {max: 50, min: 0}
+		if(placeReviews.max > member.reviews.max)
+			pingInfo.review = placeReviews.max
+		else if(placeReviews.min < member.reviews.min)
+			pingInfo.review = placeReviews.min
+
+		var categories = Object.keys(pingInfo)
+		pingInfo.id = memberID
+		for(var i = 0; i < categories.length; i++){
+			var category = categories[i]
+			var option = pingInfo[categories[i]]
+
+			var similarExists = false;
+			for(var j = 0; j < sentPingsList.length; j++){
+				var ping = sentPingsList[j]
+				if(ping.id === pingInfo.id && ping.category === category && ping.option === option && ping.accepted == null)
+					similarExists = true
+			}
+			if(!similarExists){
+				var receiverIndex = members.findIndex(member => member.id === memberID)
+
+				var classStr = 'ping-' + category + '-'
+				var descriptionHtml = ''
+				if(category === 'top'){
+					classStr += option
+					descriptionHtml += `<b>${topNames[option.split('_')[1]]}</b> in <b>Place Categories</b>`
+				}else if(category === 'price'){
+					classStr += option.length
+					descriptionHtml += `<b>${option}</b> in <b>Price Range</b>`
+				}else if(category === 'rating'){
+					classStr += option
+					descriptionHtml += `<b>${option}</b> in <b>Ratings</b>`
+				}else if(category === 'review'){
+					classStr += option
+					if(option <= members[receiverIndex].reviews.min)
+						option = indexToReview(reviewToIndex(option) + 1)
+					if(option == 1001)
+						descriptionHtml += `<b>Over 1000</b> in <b>Number of Reviews</b>`
+					else
+						descriptionHtml += `<b>${option}</b> in <b>Number of Reviews</b>`
+				}
+
+				$('#sent-pings').prepend(`<div class='ping-entry ${classStr}' data-receiver='${memberID}'>
+											<div class='msg-pic-section'><img src='profile_imgs/${members[receiverIndex].filename}' style='border-color:${colors[receiverIndex]}'/></div>
+											<div class='ping-text-section'>
+												<h1>You asked <b style='color:${colors[receiverIndex]}'>${members[receiverIndex].firstname} ${members[receiverIndex].lastname}</b> </br>
+													to include ${descriptionHtml}.</h1>	
+												<h1 style='margin-top: 10px'> <b>Status:</b></br>
+													 <span class='status'>Not accepted or rejected yet</span></h1>						
+											</div>
+										</div>`);
+				$('#sent-pings .nothing-msg').hide()
+				sentPingsList.push({id: pingInfo.id, category: category, option: option, accepted: null})
+			}
+		}
+		socket.emit('new ping candidate', pingInfo)
+	})
+
+	$('#' + type + '-list .place-disagrees img').mouseover(function(e){
+		var place = placesList.find(entry => entry.id === $(this).data('placeid'))
+		var member = members.find(member => member.id === $(this).data('userid'))
+		var placeName = place.name
+		var userName = member.firstname[0] + '.' + member.lastname[0] + '.'
+
+		$('.ping-tooltip').html(`Ask ${name} to agree on "${placeName}"`)
+		$('.ping-tooltip').css({left: e.pageX + 15 + 'px', top: e.pageY + 'px'})
+		$('.ping-tooltip').css('visibility', 'visible')
+	}).mouseout(function(){
+		$('.ping-tooltip').css('visibility', 'hidden')
+	})
+}
+
+
+function getAndDisplayPlaceDetails(placeID, type){
+	var place = type === 'places' ? placesList.find(place => place.id === placeID) : favsList.find(place => place.id === placeID)
+
+	displayPlaceDetails(place)
+}
+
+function displayPlaceDetails(place){
+	$('.place-detail').data('id', place.id)
+	$('#place-detail-photo').data('index', 0)
+	$('#place-detail-photo').attr('src', place.photo + '0.jpg')
+	mymap.setView([parseFloat(place.lat), parseFloat(place.lng)], 13);
+	marker.setLatLng([parseFloat(place.lat), parseFloat(place.lng)])
+	L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token={accessToken}', {
+	    attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, <a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, Imagery © <a href="http://mapbox.com">Mapbox</a>',
+	    maxZoom: 18,
+	    id: 'mapbox.streets',
+	    accessToken: 'pk.eyJ1IjoidHNvb2siLCJhIjoiY2pmcWthc2QzMmFxajMzbXN0YjN1c2h1NyJ9.oePShXxHTrQVXZDhjJWoPg'
+	}).addTo(mymap);
+
+	$('#place-detail-name').html(place.name)
+
+	var left = place.rating/1
+	var ratingImgs = ''
+	for(var i = 0; i < 5; i++){
+		if(left == 0.5){
+			ratingImgs += "<span><img src='img/List_star_dot5.png'></span>"
+			left -= 0.5
+		}else if(left == 0){
+			ratingImgs += "<span><img src='img/List_star_0.png'></span>"
+		}else{
+			ratingImgs += "<span><img src='img/List_star_1.png'></span>"
+			left -= 1
+		}
+	}
+
+	$('#place-detail-rating').html('<span>RATINGS</span> ' + ratingImgs)
+	$('#place-detail-reviews').html('<span>POPULARITY</span> ' + place.reviews + ' ratings')
+	$('#place-detail-top').html('<span>CATEGORY</span> ' + topNames[place.top.split('_')[1]])
+	$('#place-detail-price').html('<span>PRICE RANGE</span> ' + '$'.repeat(place.price))
+	$('#place-detail-address').html('<span>ADDRESS</span> ' + place.address)
+	$('#place-detail-phone').html('<span>PHONE</span> ' + place.phone)
+
+	//$('#place-detail-agree').html(place.agree.map(member => `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[member.index]}">`).join(''))
+	//$('#place-detail-disagree').html(place.disagree.map(member => `<img src="profile_imgs/${member.filename}" style="border-color: ${colors[member.index]}">`).join(''))
+
+	$('.overlay').fadeIn()
+}
+
+function changeDetailImage(){
+	var place = searchPlace ? searchPlace : placesList.find(place => place.id === $('.place-detail').data('id'))
+
+	var index = $('#place-detail-photo').data('index')/1
+	index = index + 1 == 10 ? 0 : index + 1
+	var img = new Image()
+	img.onload = function(){
+		$('#place-detail-photo').attr('src', place.photo + index + '.jpg')
+		$('#place-detail-photo').data('index', index)
+	}
+	img.onerror = function(){
+		$('#place-detail-photo').attr('src', place.photo + '0.jpg')
+		$('#place-detail-photo').data('index', 0)
+	}
+	img.src = place.photo + index + '.jpg'
 }

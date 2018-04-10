@@ -1,0 +1,28 @@
+{ Error: ER_PARSE_ERROR: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 's by farestart%' LIMIT 10' at line 1
+    at Query.Sequence._packetToError (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Sequence.js:52:14)
+    at Query.ErrorPacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Query.js:77:18)
+    at Protocol._parsePacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Protocol.js:279:23)
+    at Parser.write (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Parser.js:76:12)
+    at Protocol.write (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Protocol.js:39:16)
+    at Socket.<anonymous> (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/Connection.js:103:28)
+    at emitOne (events.js:96:13)
+    at Socket.emit (events.js:188:7)
+    at readableAddChunk (_stream_readable.js:176:18)
+    at Socket.Readable.push (_stream_readable.js:134:10)
+    --------------------
+    at Pool.query (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/Pool.js:199:23)
+    at /var/www/users/traffigram/come_together_server/ComeTogether/source/controllers/mainController.js:229:7
+    at Layer.handle [as handle_request] (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/layer.js:95:5)
+    at next (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/route.js:137:13)
+    at Route.dispatch (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/route.js:112:3)
+    at Layer.handle [as handle_request] (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/layer.js:95:5)
+    at /var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:281:22
+    at Function.process_params (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:335:12)
+    at next (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:275:10)
+    at /var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express-session/index.js:489:7
+  code: 'ER_PARSE_ERROR',
+  errno: 1064,
+  sqlMessage: 'You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'s by farestart%\' LIMIT 10\' at line 1',
+  sqlState: '42000',
+  index: 0,
+  sql: 'SELECT DISTINCT p_data->\'$.data.yelp.name\' FROM places WHERE LOWER(p_data->\'$.data.yelp.name\') LIKE \'%maslow\'s by farestart%\' LIMIT 10' }

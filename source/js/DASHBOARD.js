@@ -1,6 +1,10 @@
 // js for DASHBOARD.html
 // Present a DASHBOARD screen
 
+var urlList = window.location.href.split('/')
+if(urlList[3] !== '')
+	window.location.href = window.location.href
+
 $.ajax({
 	url: "html/DASHBOARD.html",
 	dataType: "html",
@@ -55,33 +59,42 @@ $.ajax({
 									var groupData = groupList[i]
 									var numMsgs = getNumNewMsgs(new Date(groupTimes[groupData.g_id]), JSON.parse(groupData.g_chat_log).data)
 									var images = ''
+									var creatorName = ''
 									for(j = 0; groupData.members && j < groupData.members.length ; j++){
 										images += `<img src="profile_imgs/${groupData.members[j].user_img_filename}"/>`;
+										if(groupData.members[j].user_id === groupData.g_status.invited_from)
+											creatorName = groupData.members[j].user_first_name
 									}
 									var html = `<div class="group_entry" id=${groupData.g_id}>
-													<h1><span class="group_title">${groupData.g_title}</span> on ${groupData.g_date.slice(0,10)}</h1>
-													<p class='num_msgs_cont' ${numMsgs > 0 ? '' : 'hidden'}><span style="color: #f00"><span class="num_msgs">${numMsgs}</span> new messages </span>in this group</p>
+													<h1><span class="group_title" ${groupData.members.length > 1 ? 'style="text-decoration: underline; cursor: pointer"' : ''}>${groupData.g_title}</span></h1>
+													<h2>Created on ${groupData.g_status.creation_date.slice(0,10)} by ${creatorName}</h2>
+													<p class='num_msgs_cont' ${numMsgs > 0 ? '' : 'hidden'}><span style="color: #f00"><span class="num_msgs">${numMsgs}</span> new messages </span>in this group after you left</p>
 													<p class='imgs-cont'>${images}</p>
-													<span class="${groupData.members && groupData.members.length > 1 ? 'btn' : 'btn_dis'} participate_btn"> PARTICIPATE </span>
-													<span class="btn leave_btn"> LEAVE THIS GROUP </span>
+													${i == 0 ? `<p><span style="color: #f00">Group URL:</span> share the following URL with your </br>
+																friends who will meet up in this event (up to 10)</p>` :
+																''}
 													<div style="margin-top: 5px">
-														<span><input type="text" class="input_text copy_url" value="http://${ip_address}:8000/main?group_id=${groupData.g_id}" style="width: 275px" readonly/></span>
+														<span><input type="text" class="input_text copy_url" value="http://${ip_address}:8000/main?group_id=${groupData.g_id}" readonly/></span>
 													</div>
+													<span class="btn copy_btn" data-url="http://${ip_address}:8000/main?group_id=${groupData.g_id}"> COPY URL </span>
 												</div>`
 									$(".group_list").append(html);
 								}
 
-								$(".participate_btn").click(function(){
-									if($(this).attr('class') === 'btn participate_btn')
-										window.location.href = `http://${ip_address}:8000/main?group_id=${$(this).parent().attr('id')}`
+								$(".group_title").click(function(){
+									if($(this).css('text-decoration').includes('underline'))
+										window.location.href = `http://${ip_address}:8000/main?group_id=${$(this).parent().parent().attr('id')}`
 								})
 
-								$(".leave_btn").click(function(){
-									console.log("try to leave group " + $(this).parent().attr('id'))
+								$(".copy_btn").click(function(){
+									var $temp = $("<input>");
+									$("body").append($temp);
+									$temp.val($(this).data("url")).select();
+									document.execCommand("copy");
+									$temp.remove();
 								})
 
 								$(".copy_url").click(function(){
-									console.log("hey")
 									var $temp = $("<input>");
 									$("body").append($temp);
 									$temp.val($(this).val()).select();
@@ -100,7 +113,7 @@ $.ajax({
 
 					socket.on('new member', function(data){
 						$('#' + data.groupID + ' .imgs-cont').append(`<img src="profile_imgs/${data.filename}"/>`)
-						$('#' + data.groupID + ' .participate_btn').attr('class', 'btn participate_btn')
+						$('#' + data.groupID + ' .group_title').css({'text-decoration': 'underline', 'cursor': 'pointer'})
 					})
 
 					socket.on('new message', function(data){

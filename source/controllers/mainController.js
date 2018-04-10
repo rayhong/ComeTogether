@@ -4,28 +4,37 @@ module.exports = function(app, con){
 	app.get('/main', function(req, res){
 		if(req.session.userID){
 			if(req.query.group_id){
-				var groupSql = `UPDATE groups SET g_status=JSON_ARRAY_APPEND(g_status, '$.invited_to', JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'accepted', true))   
-								WHERE g_id=${con.escape(req.query.group_id)} AND JSON_SEARCH(g_status, 'one', ${con.escape(req.session.userID)}, NULL, '$.invited_to[*].user_id') IS NULL 
-								AND g_status->'$.invited_from' != ${con.escape(req.session.userID)}`
-				con.query(groupSql, function(err, result){
-					if (err)
-						res.sendFile('alt_index.html', {root: __dirname + '/../html'})
+				var selectSql = `SELECT g_status FROM groups WHERE g_id=${con.escape(req.query.group_id)} AND (JSON_LENGTH(g_status->'$.invited_to') < 9 OR 
+																   JSON_SEARCH(g_status, 'one', ${con.escape(req.session.userID)}, NULL, '$.invited_to[*].user_id') IS NOT NULL 
+																   OR g_status->'$.invited_from' = ${con.escape(req.session.userID)})`
+				con.query(selectSql, function(err, result){
+					if(err || result.length == 0)
+						res.sendFile('err_index.html', {root: __dirname + '/../html'})
 					else{
-						req.session.groupID = req.query.group_id;
-						if(result.affectedRows != 0){
-							var userSql = `UPDATE users SET user_groups = JSON_ARRAY_APPEND(user_groups, '$.data', JSON_OBJECT('g_id', ${con.escape(req.query.group_id)}, 'last_access_time', CURRENT_TIMESTAMP)) 
-											WHERE user_id=${con.escape(req.session.userID)} AND 
-											JSON_SEARCH(user_groups, 'one', ${con.escape(req.query.group_id)}, NULL, '$.data') IS NULL`
-							con.query(userSql, function(err, result){
-								res.sendFile('MAIN.html', {root: __dirname + '/../html'})
-							})
-						}else{
-							res.sendFile('MAIN.html', {root: __dirname + '/../html'})
-						}
+						var groupSql = `UPDATE groups SET g_status=JSON_ARRAY_APPEND(g_status, '$.invited_to', JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'accepted', true))   
+										WHERE g_id=${con.escape(req.query.group_id)} AND JSON_SEARCH(g_status, 'one', ${con.escape(req.session.userID)}, NULL, '$.invited_to[*].user_id') IS NULL 
+										AND g_status->'$.invited_from' != ${con.escape(req.session.userID)}`
+						con.query(groupSql, function(err, result){
+							if (err)
+								res.sendFile('alt_index.html', {root: __dirname + '/../html'})
+							else{
+								req.session.groupID = req.query.group_id;
+								if(result.affectedRows != 0){
+									var userSql = `UPDATE users SET user_groups = JSON_ARRAY_APPEND(user_groups, '$.data', JSON_OBJECT('g_id', ${con.escape(req.query.group_id)}, 'last_access_time', CURRENT_TIMESTAMP)) 
+												   WHERE user_id=${con.escape(req.session.userID)} AND 
+												   JSON_SEARCH(user_groups, 'one', ${con.escape(req.query.group_id)}, NULL, '$.data') IS NULL`
+									con.query(userSql, function(err, result){
+										res.sendFile('MAIN.html', {root: __dirname + '/../html'})
+									})
+								}else{
+									res.sendFile('MAIN.html', {root: __dirname + '/../html'})
+								}
+							}
+						})
 					}
 				})
 			}else{
-				res.sendFile('alt_index.html', {root: __dirname + '/../html'});
+				res.sendFile('err_index.html', {root: __dirname + '/../html'});
 			}
 		}else{
 			res.sendFile('index.html', {root: __dirname + '/../'});
@@ -33,14 +42,16 @@ module.exports = function(app, con){
 	});
 
 	app.get('/get_group_cdqs', function(req, res){
-		var sql = `SELECT g_title, g_cdq, g_status FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
+		var sql = `SELECT g_title, g_cdq, g_status, g_types FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
 
 		con.query(sql, function(err, result){
-			if(err) 
+			if(err){
 				console.log(err);
-			else{
+				res.send({})
+			}else{
 				var title = result[0].g_title
 				var status = JSON.parse(result[0].g_status)
+				var types = JSON.parse(result[0].g_types)
 				var cdqData = JSON.parse(result[0].g_cdq).data;
 				var invitedToList = status.invited_to;
 				var idList = "(" + con.escape(status.invited_from);
@@ -100,14 +111,15 @@ module.exports = function(app, con){
 												'cities_init', false, 'cities', JSON_ARRAY())) 
 									   WHERE g_id=${con.escape(req.session.groupID)}`
 						con.query(addSql, function(err, result){
-							if(err)
+							if(err){
 								console.log(err)
-							else{
-								res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: true});
+								res.send({})
+							}else{
+								res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: true, types: types});
 							}
 						})
 					}else
-						res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: false});
+						res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: false, types: types});
 				})
 			}
 		})
@@ -146,44 +158,65 @@ module.exports = function(app, con){
 			}
 			strList += ')'
 			sql += `p_top IN ${strList} AND `
-			sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
-				CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating)} AND `
-
-			sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
-			if(data.reviews.max != 1001)
-				sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
-
-			con.query(sql, function(err,result){
-				if(err) 
-					console.log(err);
-				else{
-					var placesList = result.map(function(entry){
-						var entryData = JSON.parse(entry.p_data).data
-						return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
-								rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images}
-					})
-					res.send(placesList)
-				}
-			})
-		}else{
-			res.send([])
 		}
-	})
+		sql += `CAST(p_data->'$.data.google.price' AS decimal) BETWEEN ${con.escape(data.price.min)} AND ${con.escape(data.price.max)} AND
+			CAST(p_data->'$.data.yelp.rating' AS decimal(10, 1)) >= ${con.escape(data.rating)} AND `
 
-	app.get('/get_favorites', function(req, res){
-		var sql = `SELECT p_top, p_data FROM places WHERE id IN (SELECT fav_place_id FROM favorites WHERE fav_g_id=${con.escape(req.session.groupID)})`
-		con.query(sql, function(err, result){
-			if(err) 
+		sql += `CAST(p_data->'$.data.yelp.review_cnt' AS decimal) >= ${con.escape(data.reviews.min)}`
+		if(data.reviews.max != 1001)
+			sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
+
+		con.query(sql, function(err,result){
+			if(err){
 				console.log(err);
-			else{
+				res.send([])
+			}else{
 				var placesList = result.map(function(entry){
 					var entryData = JSON.parse(entry.p_data).data
 					return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
-							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images}
+							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images, 
+							lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone}
 				})
 				res.send(placesList)
 			}
 		})
+	})
+
+	app.get('/get_favorites', function(req, res){
+		var sql = `SELECT fav_user_id, fav_place_id FROM favorites WHERE fav_g_id=${con.escape(req.session.groupID)}`
+		con.query(sql, function(err, favs){
+			if(err){
+				console.log(err);
+				res.send([])
+			}else{
+				var placeIDs = ''
+				var idToUserMap = {}
+				for(var i = 0; i < favs.length; i++){
+					if(i != 0) 
+						placeIDs += ", "
+					placeIDs += favs[i].fav_place_id
+					idToUserMap[favs[i].fav_place_id] = favs[i].fav_user_id
+				}
+				if(placeIDs !== ''){
+					sql = `SELECT id, p_top, p_data FROM places WHERE id IN (${placeIDs})`
+					con.query(sql, function(err, result){
+						if(err){
+							console.log(err);
+							res.send([])
+						}else{
+							var placesList = result.map(function(entry){
+								var entryData = JSON.parse(entry.p_data).data
+								return {id: entryData.yelp.id, user: idToUserMap[entry.id], top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
+										rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images,
+										lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone}
+							})
+							res.send(placesList)
+						}
+					})
+				}else
+					res.send([])
+			}
+		}) 
 	})
 
 	app.get("/get_pings", function(req, res){
@@ -196,5 +229,35 @@ module.exports = function(app, con){
 				res.send(result)
 			})
 		}
+	})
+
+	app.post("/get_search_suggestions", function(req, res){
+		var str = con.escape('%' + req.body.str.toLowerCase() + '%')
+		var sql = `SELECT DISTINCT p_data->'$.data.yelp.name' FROM places WHERE LOWER(p_data->'$.data.yelp.name') LIKE ${str} LIMIT 10`
+		con.query(sql, function(err, result){
+			if (err) console.log(err);
+			res.send(result.map(entry => entry["p_data->'$.data.yelp.name'"]));
+		})
+	})
+
+	app.post('/search_place', function(req, res){
+		var str = con.escape('%' + req.body.str.toLowerCase() + '%')
+		var sql = `SELECT DISTINCT p_top, p_data FROM places WHERE LOWER(p_data->'$.data.yelp.name') LIKE ${str} LIMIT 1`
+
+		con.query(sql, function(err,result){
+			if(err){
+				console.log(err);
+				res.send(false)
+			}else{
+				if(result.length > 0){
+					var entryData = JSON.parse(result[0].p_data).data
+					res.send({id: entryData.yelp.id, top: result[0].p_top, name: entryData.yelp.name, price: entryData.google.price, 
+							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images, 
+							lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone})
+				}else{
+					res.send(false)
+				}
+			}
+		})
 	})
 }

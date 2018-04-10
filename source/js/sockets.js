@@ -26,11 +26,13 @@ $(document).ready(function(){
 		var locCategories = Object.keys(topAgreements)
 		for(i = 0; i < locCategories.length - 1; i++){
 			var category = locCategories[i]
+			if(!typesChosen[category])
+                continue;
 			var topKeyList = Object.keys(topAgreements[category])
 			for(j = 0; j < topKeyList.length; j++){
 				var top = topKeyList[j]
 				var html = `<rect class='criteria-rect' x='${201 + (index-1)*30}' y='${$('#top-group-' + top + ' > #right-rect').attr('y')}' width='30' height='26' style='fill:${colors[index]}'/>
-							<circle id='${'ping-' + category + '_' + top + '-' + member.id}' class='test-ping' cx='${201 + (index-1)*30 + 15}' cy='${$('#top-group-' + top + ' > #right-rect').attr('y')/1 + 13}' r='5' style='fill:#000; opacity: 0'}'/>`
+							<image id='${'ping-' + category + '_' + top + '-' + member.id}' class='test-ping' href='img/CDQ_ping.png' x='${201 + (index-1)*30 + 7}' y='${$('#top-group-' + top + ' > #right-rect').attr('y')/1 + 6}' style='opacity: 0'/>`
 				$('#top-group-' + top + ' > .top-members-sel').html($('#top-group-' + top + ' > .top-members-sel').html() + html)
 			}
 		}
@@ -87,7 +89,7 @@ $(document).ready(function(){
 				topAgreed++;
 			updateTopAgreement(category, top)
 			$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberIndex-1) + ')').css('opacity', 1)
-			$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberIndex) + ')').css('opacity', 0)
+			$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberIndex) + ')').css({'opacity': 0, 'cursor': 'auto'})
 			if(pastAgreedNum == 0 && !$('#top-show-categories').is(':checked')){
 				$('#top-group-' + top).css('opacity', 1)
 				var topKeyList = Object.keys(topAgreements[category])
@@ -115,6 +117,8 @@ $(document).ready(function(){
 
 				var locCategories = Object.keys(topAgreements)
 				for(i = locCategories.indexOf(category) + 1; i < locCategories.length - 1; i++){
+					if(!typesChosen[locCategories[i]])
+                    	continue;
 					if($('#top-type-' + locCategories[i]).attr('transform'))
 						$('#top-type-' + locCategories[i]).attr('transform', $('#top-type-' + locCategories[i]).attr('transform') + ' translate(0, ' + 26 + ')')
 					else
@@ -128,8 +132,12 @@ $(document).ready(function(){
 			topAgreements[category][top]--
 			updateTopAgreement(category, top)
 			$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberIndex - 1) + ')').css('opacity', 0)
-			if(userCDQ.top && userCDQ.top.includes(category + "_" + top))
-				$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberIndex) + ')').css('opacity', 1)
+			if(userCDQ.top && userCDQ.top.includes(category + "_" + top)){
+				$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberIndex) + ')').css('opacity', 1)
+				if($('#top-show-all').is(':checked'))
+					$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberIndex) + ')').css('cursor', 'pointer')
+			}	
+
 			if(topAgreements[category][top] == 0 && !$('#top-show-categories').is(':checked'))
 				clearDisagreedTop();
 		}
@@ -174,7 +182,7 @@ $(document).ready(function(){
 				member.price = {min: data.min, max: data.max}
 				priceAgreements[4]--
 			}
-			$('#price-members-sel rect:nth-child(' + 9*memberIndex + ')').attr({y: startIndex*26 + 6, height: (endIndex - startIndex + 1)*26})
+			$('#price-members-sel rect:nth-child(' + 6*memberIndex + ')').attr({y: startIndex*26 + 6, height: (endIndex - startIndex + 1)*26})
 		}else{
 			var userStart = stringToPriceIndex(member.price.max)
 			var userEnd = stringToPriceIndex(member.price.min)
@@ -183,7 +191,7 @@ $(document).ready(function(){
 			}
 			priceAgreements[4]++
 			member.price = false
-			$('#price-members-sel rect:nth-child(' + 9*memberIndex + ')').attr({y: 6, height: 4*26})
+			$('#price-members-sel rect:nth-child(' + 6*memberIndex + ')').attr({y: 6, height: 4*26})
 		}
 
 		updatePriceAgreement(true)
@@ -203,12 +211,14 @@ $(document).ready(function(){
 				updateRatingAgreement(5, data.rating)
 			}
 			member.rating = data.rating
+			$('#rating-members-sel rect:nth-child(' + 7*memberIndex + ')').attr('height', (minToRatingIndex(member.rating) + 1)*26)
 		}else{
 			ratingAgreements[5]++
 			for(i = 0; i < minToRatingIndex(member.rating) + 1; i++)
 				ratingAgreements[i]--
 			updateRatingAgreement(4, 4)
 			member.rating = -1
+			$('#rating-members-sel rect:nth-child(' + 7*memberIndex + ')').attr('height', 5*26)
 		}
 		changeMemberAgreement(members[memberIndex])
 	})
@@ -236,14 +246,16 @@ $(document).ready(function(){
 					reviewAgreements[i]++
 				member.reviews = {min: data.min, max: data.max}
 				reviewAgreements[5]--
-			}	
+			}
+			$('#review-members-sel rect:nth-child(' + 7*memberIndex + ')').attr({y: startIndex*26 + 6, height: (endIndex - startIndex)*26})
 		}else{
 			var userStart = reviewToIndex(member.reviews.max)
 			var userEnd = reviewToIndex(member.reviews.min)
 			for(i = userStart; i < userEnd; i++)
 				reviewAgreements[i]--
 			reviewAgreements[5]++
-			member.reviews = false	
+			member.reviews = false
+			$('#review-members-sel rect:nth-child(' + 7*memberIndex + ')').attr({y: 6, height: 5*26})
 		}
 
 		updateReviewAgreement(true, 0, 0)
@@ -282,25 +294,57 @@ $(document).ready(function(){
 			var descriptionHtml = ''
 			if(data.category === 'top'){
 				classStr += data.option
-				descriptionHtml += `<b>${topNames[data.option.split('_')[1]]}</b> in your <b>Place Categories</b></h1>`
+				descriptionHtml += `<b>${topNames[data.option.split('_')[1]]}</b> in your <b>Place Categories</b>`
 			}else if(data.category === 'price'){
 				classStr += data.option.length
-				descriptionHtml += `<b>${data.option}</b> in your <b>Price Range</b></h1>`
+				descriptionHtml += `<b>${data.option}</b> in your <b>Price Range</b>`
+			}else if(data.category === 'rating'){
+				classStr += data.option
+				descriptionHtml += `<b>${data.option}</b> in your <b>Ratings</b>`
+			}else if(data.category === 'review'){
+				classStr += data.option
+				if(data.option == 1001)
+					descriptionHtml += `<b>Over 1000</b> in your <b> Number of Reviews</b>`
+				else
+					descriptionHtml += `<b>${data.option}</b> in your <b> Number of Reviews</b>`
 			}
 
-			$('#ping-container').append(`<div class='ping-entry ${classStr}' data-sender='${data.senderID}'>
+			$('#received-pings').prepend(`<div class='ping-entry ${classStr}' data-sender='${data.senderID}'>
 											<div class='msg-pic-section'><img src='profile_imgs/${members[senderIndex].filename}' style='border-color:${colors[senderIndex]}'/></div>
 											<div class='ping-text-section'>
-												<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> asked you to include </br>
-												${descriptionHtml}
-												<button class='accept-ping-btn' onclick="acceptPing('${data.category}', '${data.option}')">Accept</button>	
-												<button class='accept-ping-btn' onclick="rejectPing('${data.senderID}', '${data.category}', '${data.option}')">Reject</button>											
+												<h1><b style='color:${colors[senderIndex]}'>${members[senderIndex].firstname} ${members[senderIndex].lastname}</b> pinged you to: </br>
+												    include ${descriptionHtml}.</h1>
+												<div>
+													<span class='btn' onclick="acceptPing('${data.category}', '${data.option}')">ACCEPT</span>	
+													<span class='btn' onclick="rejectPing('${data.senderID}', '${data.category}', '${data.option}')">REJECT</span>
+												</div>										
 											</div>
 										</div>`);
 
 			if($('#right > .column-content')[0].scrollHeight > $('#right > .column-content').height())
 				$('#right > .column-content').css('overflow-y', 'scroll')
-			$('#ping-container .nothing-msg').hide()
+			$('#received-pings .nothing-msg').hide()
+			var pingUnanswered = $('#ping-unanswered').html() === '' ? 1 : $('#ping-unanswered').html().split(' ')[0].slice(1)/1 + 1
+			$('#ping-unanswered').html('(' + pingUnanswered + ' unanswered)')
+			$('.bottom-tooltip').html('You have received a ping from ' + members[senderIndex].firstname[0] + '.' + members[senderIndex].lastname[0] + '.')
+								.css('visibility', 'visible')
+			setTimeout(function(){
+				$('.bottom-tooltip').css('visibility', 'hidden')
+			}, 3000)
+		}
+	})
+
+	socket.on('accept ping', function(data){
+		if(data.category === 'price')
+			data.option = data.option.length
+		$(`.ping-${data.category}-${data.option}[data-receiver='${data.receiverID}'] .status`).html('Accepted')
+	})
+
+	socket.on('reject ping', function(data){
+		if(userCDQ.id === data.senderID){
+			if(data.category === 'price')
+				data.option = data.option.length
+			$(`.ping-${data.category}-${data.option}[data-receiver='${data.receiverID}'] .status`).html('Rejected')
 		}
 	})
 
@@ -331,10 +375,10 @@ $(document).ready(function(){
 		var left = entry.rating/1
 		for(j = 0; j < 5; j++){
 			if(left == 0.5){
-				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
+				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
 				left -= 0.5
 			}else if(left == 0)
-				ratingHtml += "<span><img src='img/List_star_dot5.png'></span>"
+				ratingHtml += "<span><img src='img/List_star_0.png'></span>"
 			else{
 				ratingHtml += "<span><img src='img/List_star_1.png'></span>"
 				left--;
@@ -342,12 +386,13 @@ $(document).ready(function(){
 
 		}
 
-		$("#place-" + entry.id + " .check-place").prop("checked", true);
+		if(entry.user !== userCDQ.id)
+			$("#place-" + entry.id + " .bookmark-button").remove()
 
-		entry.html = `<div id='fav-${entry.id}' class='place-entry'>
+		entry.html = `<div id='fav-${entry.id}' class='place-entry' style="cursor: pointer">
 								<div class='place-img-section'>
 									<img src='${entry.photo}0.jpg'/>
-									<input id="check-fav-${entry.id}" class="check-fav" type='checkbox'><label for="check-fav-${entry.id}"> Add this to group archive </label>
+									${entry.user === userCDQ.id ? '<img id="check-fav-' + entry.id + '" class="bookmark-button" src="img/LIST_favon.png">' : ''}
 								</div>
 								<div class='place-info-section'>
 									<h1>${topNames[entry.top.split('_')[1]]}</h1>
@@ -358,13 +403,13 @@ $(document).ready(function(){
 									</div>
 									<h2>${entry.address} | ...</h2>
 									<div class='place-agreement-info'>
-										<div class='place-disagrees'>
-											<h2><b> Disagree: </b></h2>
-											<div class='img-list'>${disagreeImgs}</div>
-										</div>
 										<div class='place-agrees'>
-											<h2><b> Agree: </b></h2>
+											<h2><b> Agreed: </b></h2>
 											<div class='img-list'>${agreeImgs}</div>
+										</div>
+										<div class='place-disagrees'>
+											<h2><b> Disagreed: </b></h2>
+											<div class='img-list'>${disagreeImgs}</div>
 										</div>
 									</div>
 								</div>
@@ -372,12 +417,7 @@ $(document).ready(function(){
 
 		favsList.push(entry)
 
-		$('#num-fav').html('(' + favsList.length + ' places)')
-
-		$(".check-fav").change(function(){
-			// TODO change so removes if already checked
-			socket.emit('add fav', $(this).attr("id").slice(10,))
-		})
+		$('#num-fav').html(favsList.length + ' places')
 
 		// LOAD MORE PLACES
 		if(favsList.length == 0){
@@ -385,22 +425,73 @@ $(document).ready(function(){
 			$('#middle > .column-content').css('overflow-y', 'hidden')
 		}else{
 			favsList.sort(placeListSort)
-			$('#favs-list').html(favsList.slice(0,20).map(place => place.html).join(''))
+			$('#favs-list').html(favsList.map(place => place.html).join(''))
 
 			if($('#middle > .column-content')[0].scrollHeight > $('#middle > .column-content').height())
 				$('#middle > .column-content').css('overflow-y', 'scroll')
 			else
 				$('#middle > .column-content').css('overflow-y', 'hidden')
 		}
+
+		$('#favs-list .place-entry').click(function(e){
+			if(!$('.place-disagrees img').is(e.target) && !$('.bookmark-button').is(e.target))
+				getAndDisplayPlaceDetails($(this).attr('id').slice(4), 'favs')
+		})
+
+		$("#favs-list .bookmark-button").click(function(){
+			var id = $(this).attr("id").slice(10,)
+			socket.emit('remove fav', id)
+			for(var j = 0; j < favsList.length; j++){
+				if(favsList[j].id === id){
+					favsList.splice(j, 1)
+					$("#fav-" + id).remove();
+					$("#place-" + id + " .bookmark-button").attr('src', 'img/LIST_favoff.png')
+					$('#num-fav').html(favsList.length + ' places')
+					if($('#middle > .column-content')[0].scrollHeight <= $('#middle > .column-content').height())
+						$('#middle > .column-content').css('overflow-y', 'hidden')
+					break;
+				}
+			}
+		})
+
+		$('#favs-list .bookmark-button').mouseover(function(e){
+			$('.ping-tooltip').html(`Remove this place from Group Bookmark`)
+			$('.ping-tooltip').css({left: e.pageX + 15 + 'px', top: e.pageY + 'px'})
+			$('.ping-tooltip').css('visibility', 'visible')
+		}).mouseout(function(){
+			$('.ping-tooltip').css('visibility', 'hidden')
+		})
 	})
 
 	socket.on('remove fav', function(id){
 		for(var j = 0; j < favsList.length; j++){
 			if(favsList[j].id === id){
-				favsList.splice(j, 1)
+				var entry = favsList.splice(j, 1)
 				$("#fav-" + id).remove();
-				$("#place-" + id + " .check-place").prop("checked", false)
-				$('#num-fav').html('(' + favsList.length + ' places)')
+				if(entry.user !== userCDQ.id){
+					$("#place-" + id + " .place-img-section").append('<img id="check-place-' + entry.id + '" class="bookmark-button" src="img/LIST_favoff.png">')
+					$("#places-list #place-" + id + " .bookmark-button").click(function(){
+						var id = $(this).attr("id").slice(12,)
+						if($(this).attr('src') === 'img/LIST_favoff.png'){
+							socket.emit('add fav', id)
+							$(this).attr('src', 'img/LIST_favon.png')
+						}else{
+							socket.emit('remove fav', id)
+							for(var j = 0; j < favsList.length; j++){
+								if(favsList[j].id === id){
+									favsList.splice(j, 1)
+									$("#fav-" + id).remove();
+									$(this).attr('src', 'img/LIST_favoff.png')
+									$('#num-fav').html(favsList.length + ' places')
+									break;
+								}
+							}
+						}
+					})
+				}
+				$('#num-fav').html(favsList.length + ' places')
+				if($('#middle > .column-content')[0].scrollHeight <= $('#middle > .column-content').height())
+					$('#middle > .column-content').css('overflow-y', 'hidden')
 				break;
 			}
 		}

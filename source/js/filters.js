@@ -4,14 +4,16 @@ $(document).ready(function(){
 	$('#top-no-pref').change(function(){
 		var change = 0;
 		if(this.checked){
-			$('.check-box').css('fill', '#F0F0F0')
+			$('.check-box').css('fill', '#FFF')
             $('.check-mark').css('opacity', 0)
+            $('.check-nopref').css('opacity', 1)
 			updateTopAgreementAll(1, false);
 			socket.emit('top change all', {change: 1})
 			userCDQ.top = false;
             getLocations()
 		}else{
 			$('.check-box').css('fill', '#FFF')
+            $('.check-nopref').css('opacity', 0)
 			updateTopAgreementAll(-1, false);
 			socket.emit('top change all', {change: -1})
 			userCDQ.top = []
@@ -61,6 +63,15 @@ $(document).ready(function(){
 					$('#rating-sel-area').attr('height', (minToRatingIndex(userCDQ.rating)+1)*26)
 					socket.emit('rating change', userCDQ.rating)
 					$dragging.attr('y', newPosition)
+
+                    var userRating = userCDQ.rating == -1 ? 4 : minToRatingIndex(userCDQ.rating)
+                    for(var i = 0; i < 5; i++){
+                        if(i <= userRating){
+                            $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 1, 'cursor': 'pointer'})
+                        }else{
+                            $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 0, 'cursor': 'auto'})
+                        }
+                    }
 
 					getLocations()
 				}
@@ -114,6 +125,15 @@ $(document).ready(function(){
 			socket.emit('rating change', userCDQ.rating)
 			$('#rating-handle').attr('y', newPosition)
 
+            var userRating = userCDQ.rating == -1 ? 4 : minToRatingIndex(userCDQ.rating)
+            for(var i = 0; i < 5; i++){
+                if(i <= userRating){
+                    $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 1, 'cursor': 'pointer'})
+                }else{
+                    $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 0, 'cursor': 'auto'})
+                }
+            }
+
 			getLocations()
 		}
     })
@@ -142,6 +162,7 @@ $(document).ready(function(){
     		$('#top-handle').attr('y', 1)
     		$('#bot-handle').attr('y', 1 + 26*4)
       		$('#price-sel-area-agreed').css('fill', '#D8D8D8')
+            $('#price-members-sel image').css({'opacity': 1, 'cursor': 'pointer'})
     		var topFound = false
     		var totalAgreed = 0;
     		for(i = 0; i < 4; i++){
@@ -172,6 +193,7 @@ $(document).ready(function(){
     	}else{
 			$('#price-sel-area').css('fill', '#AEC7E8')
 			$('#price-sel-area-agreed').css('fill', '#1F77B5')
+            $('#price-members-sel image').css({'opacity': 1, 'cursor': 'pointer'})
     		priceAgreements[4]--;
     		for(i = 0; i < 4; i++)
     			priceAgreements[i]++
@@ -189,6 +211,7 @@ $(document).ready(function(){
     		$('#rating-sel-area').css('fill', '#D8D8D8');
     		$('#rating-handle').attr('y', 1 + 26*5)
     		$('#rating-sel-area-agreed').css('fill', '#D8D8D8')
+            $('#rating-members-sel image').css({'opacity': 1, 'cursor': 'pointer'})
     		ratingAgreements[5]++
     		for(i = 0; i < minToRatingIndex(userCDQ.rating) + 1; i++)
     			ratingAgreements[i]--
@@ -220,6 +243,7 @@ $(document).ready(function(){
     		$('#review-top-handle').attr('y', 1)
     		$('#review-bot-handle').attr('y', 1 + 26*5)
       		$('#review-sel-area-agreed').css('fill', '#D8D8D8')
+            $('#review-members-sel image').css({'opacity': 1, 'cursor': 'pointer'})
     		var topFound = false
     		var totalAgreed = 0;
     		for(i = 0; i < 5; i++){
@@ -250,6 +274,7 @@ $(document).ready(function(){
     	}else{
 			$('#review-sel-area').css('fill', '#AEC7E8')
 			$('#review-sel-area-agreed').css('fill', '#1F77B5')
+            $('#review-members-sel image').css({'opacity': 1, 'cursor': 'pointer'})
     		reviewAgreements[5]--;
     		for(i = 0; i < 5; i++)
     			reviewAgreements[i]++
@@ -267,6 +292,8 @@ $(document).ready(function(){
     	if(this.checked){
     		for(var i = 0; i < locCategories.length - 1; i++){
     			var category = locCategories[i]
+                if(!typesChosen[category])
+                    continue;
     			var topKeyList = Object.keys(topAgreements[category])
     			for(var j = 0; j < topKeyList.length; j++){
     				var top = topKeyList[j]
@@ -274,13 +301,15 @@ $(document).ready(function(){
 		    			$('#top-group-' + top + ' > #right-rect').addClass('show-all-rect')
 		    			$('#top-group-' + top + ' > #right-text').css({opacity: '0', transition: '0.2s'})
 		    			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '1')
- 				   		$('#top-group-' + top + ' .test-ping').css('cursor', 'pointer')
+ 				   		$('#top-group-' + top + ' .test-ping').filter(function(){ return $(this).css('opacity') == 1 }).css('cursor', 'pointer')
     				}
     			}
     		}
     	}else{
     		for(var i = 0; i < locCategories.length - 1; i++){
     			var category = locCategories[i]
+                if(!typesChosen[category])
+                    continue;
     			var topKeyList = Object.keys(topAgreements[category])
     			for(var j = 0; j < topKeyList.length; j++){
     				var top = topKeyList[j]
@@ -288,7 +317,7 @@ $(document).ready(function(){
 		    			$('#top-group-' + top + ' > #right-rect').removeClass('show-all-rect')
 		    			$('#top-group-' + top + ' > #right-text').css({opacity: '1', transition: '0.2s'})
 		    			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '0')
- 				   		$('#top-group-' + top + ' .test-ping').css('cursor', 'default')
+ 				   		$('#top-group-' + top + ' .test-ping').css('cursor', 'auto')
 		    		}
 		    	}
     		}
@@ -302,7 +331,7 @@ $(document).ready(function(){
     		for(i = 0; i < priceAgreements.length - 1; i++){
     			$('#right-rect-price-' + i).addClass('show-all-rect')
     			$('#right-text-price-' + i).css({opacity: '0', transition: '0.2s'})
-    			if(i <= stringToPriceIndex(userCDQ.price.min) && i >= stringToPriceIndex(userCDQ.price.max))
+    			if(userCDQ.price && i <= stringToPriceIndex(userCDQ.price.min) && i >= stringToPriceIndex(userCDQ.price.max))
     				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'pointer')
     		}
     		$('#price-members-sel').css('opacity', '1')
@@ -317,16 +346,67 @@ $(document).ready(function(){
     	}
     })
 
+    // if user checked, show the price preferences of all the members in the group
+    // else, hide the preferences and display concise information
+    $('#rating-show-all').change(function(){
+        if(this.checked){
+            $('#right-rect-agreed').addClass('show-all-rect')
+            $('#right-text-agreed').css({opacity: '0', transition: '0.2s'})
+            $('#right-rect-disagreed').addClass('show-all-rect')
+            $('#right-text-disagreed').css({opacity: '0', transition: '0.2s'})
+            for(i = 0; i < ratingAgreements.length - 1; i++){
+                if(userCDQ.rating != -1 && i <= minToRatingIndex(userCDQ.rating))
+                    $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css('cursor', 'pointer')
+            }
+            $('#rating-members-sel').css('opacity', '1')
+
+        }else{
+            $('#right-rect-agreed').removeClass('show-all-rect')
+            $('#right-text-agreed').css('opacity', '1')
+            $('#right-rect-disagreed').removeClass('show-all-rect')
+            $('#right-text-disagreed').css('opacity', '1')
+
+            $('#rating-members-sel').css('opacity', '0')
+            $('#rating-members-sel .test-ping').css('cursor', 'auto')
+        }
+    })
+
+    $('#review-show-all').change(function(){
+        if(this.checked){
+            $('#right-rect-disagreed-top').addClass('show-all-rect')
+            $('#right-text-disagreed-top').css({opacity: '0', transition: '0.2s'})
+            $('#reviews-svg #right-rect-agreed').addClass('show-all-rect')
+            $('#reviews-svg #right-text-agreed').css({opacity: '0', transition: '0.2s'})
+            $('#right-rect-disagreed-bot').addClass('show-all-rect')
+            $('#right-text-disagreed-bot').css({opacity: '0', transition: '0.2s'})
+            for(i = 0; i < reviewAgreements.length - 1; i++){
+                if(userCDQ.reviews && i < reviewToIndex(userCDQ.reviews.min) && i >= reviewToIndex(userCDQ.reviews.max))
+                    $('[id^=ping-review-' + indexToReview(i) + '-]').css('cursor', 'pointer')
+            }
+            $('#review-members-sel').css('opacity', '1')
+
+        }else{
+            $('#right-rect-disagreed-top').removeClass('show-all-rect')
+            $('#right-text-disagreed-top').css({opacity: '1'})
+            $('#reviews-svg #right-rect-agreed').removeClass('show-all-rect')
+            $('#reviews-svg #right-text-agreed').css({opacity: '1'})
+            $('#right-rect-disagreed-bot').removeClass('show-all-rect')
+            $('#right-text-disagreed-bot').css({opacity: '1'})
+            $('#review-members-sel').css('opacity', '0')
+            $('#review-members-sel .test-ping').css('cursor', 'auto')
+        }
+    })
+
     // collapse or expand the specified criteria
     $('.collapse').click(function(){
     	var id = $(this).attr('id')
     	var criteriaName = id.slice(9, id.length)
     	if($(this).data('collapsed')){
-    		$('#' + criteriaName + 's-svg-container').slideDown();
+    		$('#' + criteriaName + '-svg-container').slideDown();
     		$(this).data('collapsed', false)
     		$(this).attr('src', 'img/CDQ_criterion_close@2x.png')
     	}else{
-    		$('#' + criteriaName + 's-svg-container').slideUp();
+    		$('#' + criteriaName + '-svg-container').slideUp();
     		$(this).data('collapsed', true)
     		$(this).attr('src', 'img/CDQ_criterion_open@2x.png')
     	}
@@ -339,6 +419,8 @@ $(document).ready(function(){
 			var added = 0;
 			for(i = 0; i < locCategories.length - 1; i++){
 				var category = locCategories[i]
+                if(!typesChosen[category])
+                    continue;
 				if(added > 0 || totalAdded > 0){
 					totalAdded += added;
 					if($('#top-type-' + category).attr('transform'))
@@ -378,6 +460,7 @@ function updateTopAgreement(category, top){
 			$('#top-group-' + top + ' > #right-rect').removeClass('show-all-rect')
 			$('#top-group-' + top + ' > #right-text').css({opacity: '1', transition: '0.2s'})
 			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '0')
+            $('#top-group-' + top + ' > .top-members-sel image').css('cursor', 'auto')
 		}
 		$('#top-group-' + top + ' > #left-rect').addClass('agreed-rect')
 		$('#top-group-' + top + ' > #right-rect').addClass('agreed-rect')
@@ -395,6 +478,7 @@ function updateTopAgreement(category, top){
 			$('#top-group-' + top + ' > #right-rect').addClass('show-all-rect')
 			$('#top-group-' + top + ' > #right-text').css({opacity: '0', transition: '0.2s'})
 			$('#top-group-' + top + ' > .top-members-sel').css('opacity', '1')
+            $('#top-group-' + top + ' > .top-members-sel image').filter(function(){ return $(this).css('opacity') == 1 }).css('cursor', 'pointer')
 		}
 		$('#top-group-' + top + ' > #left-rect').removeClass('agreed-rect')
 		$('#top-group-' + top + ' > #right-rect').removeClass('agreed-rect')
@@ -433,6 +517,8 @@ function updateTopAgreementAll(change, memberID){
 	topAgreed = 0;
 	for(i = 0; i < locCategories.length - 1; i++){
 		var category = locCategories[i]
+        if(!typesChosen[category])
+            continue;
 		var topKeyList = Object.keys(topAgreements[category])
 		for(j = 0; j < topKeyList.length; j++){
 			var top = topKeyList[j]
@@ -449,25 +535,35 @@ function updateTopAgreementAll(change, memberID){
 			if(memberID){
 				if(change >= 0){
 					$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberID-1) + ')').css('opacity', 1)
-					$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberID) + ')').css('opacity', 0)
+					$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberID) + ')').css({'opacity': 0, 'cursor': 'auto'})
 				}else{
 					$('#top-group-' + top + ' > .top-members-sel rect:nth-child(' + (2*memberID-1) + ')').css('opacity', 0)
-					if(userCDQ.top.includes(topId))
-						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*memberID) + ')').css('opacity', 1)
+					if(userCDQ.top == false || userCDQ.top.includes(topId)){
+						$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberID) + ')').css('opacity', 1)
+                        if($('#top-show-all').is(':checked'))
+                            $('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*memberID) + ')').css('cursor', 'pointer')
+
+                    }
 				}
 			}else{
 				if(change > 0){
+                    $('#top-group-' + top + '> .top-members-sel image').css({'opacity': 0, 'cursor': 'auto'})
+                }
+                /*
 					for(k = 1; k < members.length; k++){
 						var member = members[k]
 						var isSelected = !member.top || member.top.includes(topId)
-						if(!isSelected)
-							$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*k) + ')').css('opacity', 1)
+						if(!isSelected){
+							$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*k) + ')').css({'opacity', 1)
+                            if($('#top-show-all').is(':checked'))
+                                $('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*k) + ')').css('cursor', 'pointer')
+                        }
 					}
 				}else{
 					for(k = 1; k < members.length; k++){
-						$('#top-group-' + top + ' > .top-members-sel circle:nth-child(' + (2*k) + ')').css('opacity', 0)
+						$('#top-group-' + top + ' > .top-members-sel image:nth-child(' + (2*k) + ')').css({'opacity': 0, 'cursor': 'auto'})
 					}
-				}
+				}*/
 			}
 
 			if((topAgreements[category][top] + topAgreements.notCare) == groupSize){
@@ -584,18 +680,13 @@ function changePriceDisplay(target, newPosition){
 			getLocations();
 		}
 	}
-
 	var minIndex = stringToPriceIndex(userCDQ.price.min)
 	var maxIndex = stringToPriceIndex(userCDQ.price.max)
 	for(var i = 0; i < 4; i++){
 		if(i <= minIndex && i >= maxIndex){
-			$('[id^=ping-price-' + (4-i) + ']').css('opacity', 1)
-			if($('#price-show-all').is(':checked'))
-				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'pointer')
+			$('[id^=ping-price-' + (4-i) + ']').css({'opacity': 1, 'cursor': 'pointer'})
 		}else{
-			$('[id^=ping-price-' + (4-i) + ']').css('opacity', 0)
-			if($('#price-show-all').is(':checked'))
-				$('[id^=ping-price-' + (4-i) + ']').css('cursor', 'auto')
+			$('[id^=ping-price-' + (4-i) + ']').css({'opacity': 0, 'cursor': 'auto'})
 		}
 	}
 }
@@ -714,7 +805,9 @@ function updateRatingAgreement(oldRating, newRating){
 				$('#right-rect-agreed').attr('height', 26*i)
 				$('#right-rect-disagreed').attr({'height': 26*(5-i), 'y': 6 + i*26})
 				$('#right-text-agreed').attr('y', 6 + 13*i)
-				$('#right-text-disagreed').attr('y', 26*i + 13*(5-i) + 6).css('opacity', 1)
+                $('#right-text-disagreed').attr('y', 26*i + 13*(5-i) + 6)
+                if(!$('#rating-show-all').is(':checked'))
+				    $('#right-text-disagreed').css('opacity', 1)
 				$('#rating-inner-border').attr('height', i*26 - 2)
 				$('#rating-sel-area-agreed').attr('height', i*26)
 			}
@@ -790,6 +883,16 @@ function changeReviewDisplay(target, newPosition){
 			getLocations()
 		}
 	}
+
+    var minIndex = reviewToIndex(userCDQ.reviews.min)
+    var maxIndex = reviewToIndex(userCDQ.reviews.max)
+    for(var i = 0; i < 5; i++){
+        if(i < minIndex && i >= maxIndex){
+            $('[id^=ping-review-' + indexToReview(i) + '-]').css({'opacity': 1, 'cursor': 'pointer'})
+        }else{
+            $('[id^=ping-review-' + indexToReview(i) + '-]').css({'opacity': 0, 'cursor': 'auto'})
+        }
+    }
 }
 
 function updateReviewAgreement(isTop, oldReview, newReview){
@@ -871,6 +974,8 @@ function clearDisagreedTop(){
 		var removed = 0;
 		for(var i = 0; i < locCategories.length - 1; i++){
 			var category = locCategories[i]
+            if(!typesChosen[category])
+                continue;
 			if(removed > 0 || totalRemoved > 0){
 				totalRemoved += removed;
 				if($('#top-type-' + category).attr('transform'))

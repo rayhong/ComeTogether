@@ -120,6 +120,10 @@ $(document).ready(function(){
 			$('.input-chat').hide()
 			$('#ping-container').show()
 		}
+		if($('#right > .column-content')[0].scrollHeight > $('#right > .column-content').height())
+			$('#right > .column-content').css('overflow-y', 'scroll')
+		else
+			$('#right > .column-content').css('overflow-y', 'hidden')
 	})
 
 })
@@ -164,14 +168,8 @@ function acceptPing(category, option){
 		var topData = option.split('_')
 
 		// trigger click on relevant category
-		$('#top-type-' + topData[0] + ' #top-group-' + topData[1] + ' .check-box').trigger('click')
-
-		// remove all similar pings
-		$('.ping-' + category + '-' + option).remove(); 
-		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
-			$('#right > .column-content').css('overflow-y', 'hidden')
-
-
+		if(!userCDQ.top.includes(option))
+			$('#top-type-' + topData[0] + ' #top-group-' + topData[1] + ' .check-box').trigger('click')
 	}else if(category === 'price'){
 		option = option.length
 		var target = $('#top-handle')
@@ -182,21 +180,69 @@ function acceptPing(category, option){
 		}
 
 		changePriceDisplay(target, newPosition)
+	}else if(category === 'rating'){
+		option = option/1
+		if($('#rating-no-pref').is(':checked')){
+			$('#rating-no-pref').prop('checked', false)
+			$('#rating-sel-area').css('fill', '#AEC7E8')
+			$('#rating-sel-area-agreed').css('fill', '#1F77B5')
+			userCDQ.rating = option
+			ratingAgreements[5]--;
+			updateRatingAgreement(5, userCDQ.rating)
+		}else{
+			oldRating = userCDQ.rating
+			updateRatingAgreement(userCDQ.rating, option)
+			userCDQ.rating = option
+		}
+		$('#rating-sel-area').attr('height', (minToRatingIndex(userCDQ.rating)+1)*26)
+		socket.emit('rating change', userCDQ.rating)
+		$('#rating-handle').attr('y', 26*(5-userCDQ.rating) + 1)
 
-		// remove all similar pings
-		$('.ping-' + category + '-' + option).remove(); 
-		if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
-			$('#right > .column-content').css('overflow-y', 'hidden')
+        var userRating = userCDQ.rating == -1 ? 4 : minToRatingIndex(userCDQ.rating)
+        for(var i = 0; i < 5; i++){
+            if(i <= userRating){
+                $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 1, 'cursor': 'pointer'})
+            }else{
+                $('[id^=ping-rating-' + minToRatingIndex(i) + ']').css({'opacity': 0, 'cursor': 'auto'})
+            }
+        }
+
+		getLocations()
+	}else if(category === 'review'){
+		var target = $('#review-top-handle')
+		var newPosition = 1 + 26*reviewToIndex(option)
+		if(userCDQ.reviews.min > option)
+			target = $('#review-bot-handle')
+
+		changeReviewDisplay(target, newPosition)
 	}
+
+	$('.ping-' + category + '-' + option).remove(); 
+	var pingLeft = $('#ping-unanswered').html().split(' ')[0].slice(1)/1 - 1
+	if(pingLeft == 0)
+		$('#ping-unanswered').html('')
+	else
+		$('#ping-unanswered').html('(' + pingLeft + ' unanswered)')
+
+	if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
+		$('#right > .column-content').css('overflow-y', 'hidden')
+	if($('#received-pings').height() == 0)
+		$("#received-pings .nothing-msg").show()
 }
 
 function rejectPing(senderID, category, option){
 	socket.emit('reject ping', {senderID: senderID, category: category, option: option})
 
-	$('.ping-' + category + '-' + option + '[data-sender="' + senderID + '"]').remove(); 
+	if(category === 'price')
+		$('.ping-' + category + '-' + option.length + '[data-sender="' + senderID + '"]').remove(); 
+	else
+		$('.ping-' + category + '-' + option + '[data-sender="' + senderID + '"]').remove(); 
 	if($('#right > .column-content')[0].scrollHeight <= $('#right > .column-content').height())
 		$('#right > .column-content').css('overflow-y', 'hidden')
+	if($('#received-pings').height() == 0)
+		$("#received-pings .nothing-msg").show()
 }
+
 
 /*
 	app.get("/get_msgs", function(req, res){

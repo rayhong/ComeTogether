@@ -241,6 +241,17 @@ $.ajax({
 				}
 			});
 
+			$(document).on("click", "#logout", function(){
+				offEvents_settings();
+				$.ajax({
+					type: 'POST',
+					url: "/logout",
+					success: function(){
+						loadScreen_settings("LOGIN_INIT")
+					}
+				})
+			});
+
 			//3-4. Go back to dashboard
 			$(document).on("click", "#DASHBOARD", function(){
 				//screen will be updated. Off events.
@@ -377,10 +388,8 @@ function update_info(filename){
 				$("#img_upload").data("filled", false).data("changed", false);
 				$("#input_homeadd").data("changed", false);
 				$("#input_officeadd").data("changed", false);
-				$("body").prepend(`<div id="confirm-msg" hidden>Information updated!</div>`)
-				$("#confirm-msg").fadeIn(function(){
-					$(this).delay(500).fadeOut();
-				})
+				offEvents_settings();
+				loadScreen_settings("DASHBOARD");
 			}else{
 				// in situation where user messes with the javascript
 				console.log("failed update")

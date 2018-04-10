@@ -189,8 +189,8 @@ module.exports = function(app, con){
 			var id = Math.random().toString(36).substring(2, 12).toUpperCase()
 			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_types, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
 					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, 
-					   JSON_OBJECT('restaurants', ${data.type.res}, 'cafe', ${data.type.caf}, 'attractions', ${data.type.attr}, 'shopping', ${data.type.shop}, 'nightlife', ${data.type.night}), 
-					   JSON_OBJECT('ongoing', true, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
+					   JSON_OBJECT('res', ${data.type.res}, 'caf', ${data.type.caf}, 'attr', ${data.type.attr}, 'shop', ${data.type.shop}, 'night', ${data.type.night}), 
+					   JSON_OBJECT('ongoing', true, 'creation_date', CURRENT_TIMESTAMP, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY(
 					   JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 'top_init', false, 'top', JSON_ARRAY(), 'price_init', false, 
 					   'price', JSON_OBJECT('min', '$', 'max', '$$$$'), 'rating_init', false, 'rating', 0, 'reviews_init', false, 
@@ -291,6 +291,22 @@ module.exports = function(app, con){
 		}
 	})
 
+	app.post('/logout', function(req, res){
+		if(req.session.userID){
+			var userSql = `UPDATE users SET user_time=CURRENT_TIMESTAMP WHERE user_id=${con.escape(req.session.userID)}`
+			con.query(userSql, function(err, result){
+				if(err)
+					console.log(err)
+				var deleteSql = `DELETE FROM sessions WHERE data->'$.userID'=${con.escape(req.session.userID)}`
+				con.query(deleteSql, function(err, result){
+					if(err)
+						console.log(err)
+					res.send()
+				})
+			})
+		}
+	})
+
 }
 
 
@@ -298,8 +314,9 @@ function getMembersInfo(groups, index, con, res){
 	if(index == groups.length)
 		res.send(JSON.stringify(groups))
 	else{
-		var invitedToList = JSON.parse(groups[index].g_status).invited_to;
-		var idList = "(" + con.escape(JSON.parse(groups[index].g_status).invited_from);
+		groups[index].g_status = JSON.parse(groups[index].g_status)
+		var invitedToList = groups[index].g_status.invited_to;
+		var idList = "(" + con.escape(groups[index].g_status.invited_from);
 		for(j = 0; j < invitedToList.length; j++){
 			if(invitedToList[j].accepted)
 				idList += ", " + con.escape(invitedToList[j].user_id)

@@ -1,7 +1,7 @@
 module.exports = function(server, con){
 	var io = require('socket.io').listen(server)
 	io.on('connection', function(socket){
-		console.log('a user connected');
+		//console.log('a user connected');
 
 		socket.on('join all groups', function(data){
 			socket.userID = data.id
@@ -94,18 +94,17 @@ module.exports = function(server, con){
 		socket.on('new ping', function(data){
 			// cdq_action: 'top': id, 'price': '$', 'rating': '4', 'reviews': 1000
 			// for the ranges: make the other user reach the range
-			var sql = `INSERT INTO pings (ping_g_id, ping_from_id, ping_to_id, ping_notified, ping_cdq_action) SELECT 
-					   ${con.escape(socket.groupID)}, ${con.escape(socket.userID)}, ${con.escape(data.id)}, false, 
-					   JSON_OBJECT(${con.escape(data.category)}, ${con.escape(data.option)}) WHERE NOT EXISTS 
-					   (SELECT id FROM pings WHERE ping_g_id=${con.escape(socket.groupID)} AND ping_from_id=${con.escape(socket.userID)} 
-					   AND ping_to_id=${con.escape(data.id)} AND ping_cdq_action->'$.${data.category}'=${con.escape(data.option)} AND
-					   ping_accepted IS NULL)`
-					   
-			con.query(sql, function(err, result){
-				if (err) console.log(err);
-				if(result.affectedRows)
-					socket.broadcast.to(socket.groupID).emit('new ping', {senderID: socket.userID, receiverID: data.id, category: data.category, option: data.option})
-			})
+			insertAndSendPing(con, socket, data.id, data.category, data.option)
+		})
+
+		socket.on('new ping candidate', function(data){
+			// cdq_action: 'top': id, 'price': '$', 'rating': '4', 'reviews': 1000
+			// for the ranges: make the other user reach the range
+			var categories = Object.keys(data)
+			for(var i = 0; i < categories.length; i++){
+				if(categories[i] !== 'id')
+					insertAndSendPing(con, socket, data.id, categories[i], data[categories[i]])
+			}
 		})
 
 		socket.on('accept ping', function(data){
@@ -113,6 +112,8 @@ module.exports = function(server, con){
 		 			   AND ping_cdq_action->'$.${data.category}'=${con.escape(data.option)} AND ping_accepted IS NULL`
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
+				if(result.affectedRows)
+					socket.broadcast.to(socket.groupID).emit('accept ping', {receiverID: socket.userID, category: data.category, option: data.option})
 			})
 		})
 
@@ -122,6 +123,8 @@ module.exports = function(server, con){
 		 			   ping_accepted IS NULL`
 			con.query(sql, function(err, result){
 				if (err) console.log(err);
+				if(result.affectedRows)
+					socket.broadcast.to(socket.groupID).emit('reject ping', {senderID: data.senderID, receiverID: socket.userID, category: data.category, option: data.option})
 			})
 		})
 
@@ -135,9 +138,10 @@ module.exports = function(server, con){
 							console.log(err)
 						else{
 							var entryData = JSON.parse(placeInfo[0].p_data).data
-							io.in(socket.groupID).emit('add fav', {id: entryData.yelp.id, top: placeInfo[0].p_top, name: entryData.yelp.name, 
+							io.in(socket.groupID).emit('add fav', {user: socket.userID, id: entryData.yelp.id, top: placeInfo[0].p_top, name: entryData.yelp.name, 
 																   price: entryData.google.price, rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, 
-																   address: entryData.yelp.address, photo: entryData.google.images})
+																   address: entryData.yelp.address, photo: entryData.google.images,
+																   lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone})
 						}
 					})
 				}
@@ -172,13 +176,6 @@ module.exports = function(server, con){
 				for(i = 0; socket.groups && i < socket.groups.length; i++)
 					socket.leave(socket.groups[i])
 			}
-			var userSql = `UPDATE users SET user_time=CURRENT_TIMESTAMP WHERE user_id=${con.escape(socket.userID)}`
-			con.query(userSql, function(err, result){
-				if(err)
-					console.log(err)
-				else
-					console.log('a user disconnected')
-			})
 		})
 	})
 }
@@ -207,4 +204,21 @@ function getPathAndQuery(sql, socket, con){
 			}
 		})
 	}
+}
+
+function insertAndSendPing(con, socket, receiverID, category, option){
+	// cdq_action: 'top': id, 'price': '$', 'rating': '4', 'reviews': 1000
+	// for the ranges: make the other user reach the range
+	var sql = `INSERT INTO pings (ping_g_id, ping_from_id, ping_to_id, ping_notified, ping_cdq_action) SELECT 
+			   ${con.escape(socket.groupID)}, ${con.escape(socket.userID)}, ${con.escape(receiverID)}, false, 
+			   JSON_OBJECT(${con.escape(category)}, ${con.escape(option)}) WHERE NOT EXISTS 
+			   (SELECT id FROM pings WHERE ping_g_id=${con.escape(socket.groupID)} AND ping_from_id=${con.escape(socket.userID)} 
+			   AND ping_to_id=${con.escape(receiverID)} AND ping_cdq_action->'$.${category}'=${con.escape(option)} AND
+			   ping_accepted IS NULL)`
+			   
+	con.query(sql, function(err, result){
+		if (err) console.log(err);
+		if(result.affectedRows)
+			socket.broadcast.to(socket.groupID).emit('new ping', {senderID: socket.userID, receiverID: receiverID, category: category, option: option})
+	})
 }

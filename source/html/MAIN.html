@@ -6,6 +6,9 @@
 		<meta content="utf-8" http-equiv="encoding">
 		<!-- CSS -->
 		<link href='cometogether.css' type='text/css' rel='stylesheet'/>
+		<link rel="stylesheet" href="https://unpkg.com/leaflet@1.3.1/dist/leaflet.css"
+		integrity="sha512-Rksm5RenBEKSKFjgI3a41vrjkw4EVPlJ3+OiI65vTjIdo9brlAacEuKOiQ5OFh7cOI1bkDwLqdLw3Zg0cRJAAQ=="
+		crossorigin=""/>
 		<!-- Google font -->
 		<link href="https://fonts.googleapis.com/css?family=Roboto+Condensed:300,400,700|Roboto:300,400,500" rel="stylesheet"> 
 		<!-- jQuery -->
@@ -13,6 +16,9 @@
 		<script src="http://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
 		<!-- Socket.io -->
 		<script src="/socket.io/socket.io.js"></script>
+		<script src="https://unpkg.com/leaflet@1.3.1/dist/leaflet.js"
+		integrity="sha512-/Nsx9X4HebavoBvEBuyp3I7od5tA0UzAxs+j83KgC8PU0kgB4XiK4Lfe4y4cgBtaRJQEIFCW+oC506aPT2L1zw=="
+		crossorigin=""></script>
 		<!-- JS -->
 		<script src="js/global.js"></script>
 		<script src="js/MAIN.js"></script>
@@ -22,18 +28,96 @@
 	</head>
 	<body>
 		<div id="canvas">
+			<div class='overlay' hidden>
+				<div class='place-detail' data-id="">
+					<div class='place-detail-header'>
+						<img id='place-detail-photo' src='' align="top" data-index='0'><!--
+						--><div class='map-area'>
+							<div id='mapid'></div>
+						</div>
+					</div>
+					<div class='place-detail-body'>
+						<div style='display: inline-block;  width: 50%'>
+							<h1 id='place-detail-name'> LOCATION NAME </h1>
+						</div><!--
+						--><div style='display: inline-block; width: 50%; text-align: right'>
+							<img id='close-detail' src='img/DETAIL_close.png' style='cursor: pointer'>
+						</div>
+						<div>
+							<div id='place-detail-rating' class='category-info'>
+								<span>RATINGS</span> 
+								<span><img src='img/List_star_1.png'></span><span><img src='img/List_star_1.png'></span><span><img src='img/List_star_1.png'></span><span><img src='img/List_star_1.png'></span><span><img src='img/List_star_1.png'></span>  
+							</div>
+							<div id='place-detail-reviews' class='category-info'>
+								<span>POPULARITY</span> 804 ratings
+							</div>
+						</div>
+						<div>
+							<div id='place-detail-top' class='category-info'>
+								<span>CATEGORY</span> New American
+							</div>
+							<div id='place-detail-price' class='category-info'>
+								<span>PRICE RANGE</span> $$
+							</div>
+						</div>
+						<div>
+							<div id='place-detail-address' class='category-info'>
+								<span>ADDRESS</span> address
+							</div>
+							<div id='place-detail-phone' class='category-info'>
+								<span>PHONE</span> xxx-xxx-xxxx
+							</div>
+						</div>
+						<div style='margin: 20px 0'>
+							<div class='category-info'>
+								<span>PEOPLE WHO DISAGREE WITH THIS PLACE </span>
+							</div>
+							<div class='agreement-area' style='margin-top: 5px'>
+								<div>
+									Agreed:
+									<div id='place-detail-agree' class="img-list" style='margin-top: 3px'>
+									</div>
+								</div>
+								<div>
+									Disagreed:
+									<div id='place-detail-disagree' class="img-list" style='margin-top: 3px'>
+									</div>
+								</div>
+							</div>
+						</div>
+						<div>
+							<div class='category-info'>
+								<span>REVIEW</span>
+							</div>
+							<div style='margin-top: 5px'>
+								"Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
+								blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah" by <b> Blah </b> on <b>26/02/2017</b>
+							</div>
+						</div>
+						<div>
+							<div class='category-info'>
+								<span> HOURS </span>
+							</div>
+							<div style='margin-top: 5px'>
+								MON, TUE, WED, THUR, FRI, SAT, SUN
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
 			<div id="SCR_MAIN" hidden>
 				<div id="top-bar">
-					<div class='bar-content' style='margin-top: 15px'>
-						<div style='width: 320px; font-size: 30px;'>
-							<img style='height: 40px; width: 40px' src='../img/test.png'/>
-							<span id="meeting-name" style='vertical-align: top'>Meeting Name</span>
+					<div class='bar-content'>
+						<div style='width: 320px; font-size: 30px; margin-top: 10px; height: 45px'>
+							<img id='home-btn' style='height: 45px; width: 45px; cursor: pointer; display: inline-block; vertical-align: middle' src='../img/test.png'/>
+							<span id="meeting-name" style='display: inline-block; vertical-align: bottom'>Meeting Name</span>
 						</div>
-						<div style='width: 540px;'>
-							<input class='input-search' type='text' style='width: 450px' placeholder='Which place are you looking for?'/>
+						<div style='width: 540px; margin-top: 15px'>
+							<input class='input-search' type='text' style='width: 450px' placeholder='Search by name of the place' list='search-suggestions'/>
+							<datalist id='search-suggestions'></datalist>
 						</div>
-						<div id='btn-area' style='text-align: right; padding-right: 0'>
-							<img id='home-btn' style='height: 30px; width: 30px; cursor: pointer' src='../test_imgs/home.png'/>
+						<div id="info-widget" style="padding: 0; position: relative; margin-top: 10px" hidden>
+							<div id="user-img"></div><div id="user-info"></div><div id="SETTINGS"><img src="../img/Header_settings@2x.png"/></div>
 						</div>
 					</div>
 				</div>
@@ -47,17 +131,18 @@
 						<div class='column-content'>
 							<div class="criteria">
 								<div style='display: inline-block; width: 160px'>
+									<img id='collapse-top' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 									<span id='top-label' class="subject-label">
 										Place Categories
 									</span>
-									<img id='collapse-top' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 								</div><!--
 								--><span id='you-label'> You </span><!--
 								--><span id='all-agreed-label'> All agreed? </span>
 								<div id='top-svg-container'></div>
+								<span class='ping-tooltip'></span>
 								<div class='option-select'>
 									<input id='top-no-pref' type='checkbox' checked>
-									<span> I don't have preferences on this criterion </span>
+									<span> I'm okay with all place categories </span>
 								</div>
 								<div class='option-select'>
 									<input id='top-show-all' type='checkbox'>
@@ -70,12 +155,12 @@
 							</div>
 							<div class="criteria">
 								<div>
+									<img id='collapse-price' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 									<span id='price-label' class="subject-label">
 										Price Range
 									</span>
-									<img id='collapse-price' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 								</div>
-								<div id='prices-svg-container'>
+								<div id='price-svg-container'>
 									<svg id='prices-svg' height="116">
 										<rect id="left-rect-price-0" class="criteria-rect" width="160" height="26" x="1" y="6"></rect>
 										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
@@ -114,7 +199,7 @@
 								</div>
 								<div class='option-select'>
 									<input id='price-no-pref' type='checkbox' checked>
-									<span> I don't have preferences on this criterion </span>
+									<span> I'm okay with any price range </span>
 								</div>
 								<div class='option-select'>
 									<input id='price-show-all' type='checkbox'>
@@ -123,12 +208,12 @@
 							</div>
 							<div class="criteria">
 								<div>
+									<img id='collapse-rating' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 									<span class="subject-label">
 										Ratings
 									</span>
-									<img id='collapse-rating' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 								</div>
-								<div id='ratings-svg-container'>
+								<div id='rating-svg-container'>
 									<svg id='ratings-svg' height="142">
 										<rect id="left-rect-rating-0" class="criteria-rect rating-rect" width="160" height="26" x="1" y="6"></rect>
 										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
@@ -154,6 +239,8 @@
 
 										<rect id="rating-sel-area" class="criteria-rect selection-area" x="169" y="6" width="24" height="130"></rect>
 										<rect id="rating-sel-area-agreed" class="criteria-rect selection-area" x="169" y="6" width="24"></rect>
+										<g id="rating-members-sel" style="opacity: 0; transition: 0.2s">
+										</g>
 										<rect id="rating-inner-border" class="agreed-inner-border" x="2" y="7" width="318"></rect>
 										<rect pointer-events="visible" id="rating-slider-area" class="criteria-rect selection-area-border" x="161" y="6" width="40" height="130"></rect>
 										<rect id="rating-handle" class="select-handle" x="165" y="131" width="32" height="10" rx="5" ry="5"></rect>
@@ -161,17 +248,21 @@
 								</div>
 								<div class='option-select'>
 									<input id='rating-no-pref' type='checkbox' checked>
-									<span> I don't have preferences on this criterion </span>
+									<span> I'm okay with any rating </span>
+								</div>
+								<div class='option-select'>
+									<input id='rating-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
 								</div>
 							</div>
 							<div class="criteria">
 								<div>
+									<img id='collapse-review' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 									<span id='review-label' class="subject-label">
 										Number of Reviews (Popularity)
 									</span>
-									<img id='collapse-review' class="collapse" src="img/CDQ_criterion_close@2x.png" data-collapsed='false'/>
 								</div>
-								<div id='reviews-svg-container'>
+								<div id='review-svg-container'>
 									<svg id='reviews-svg' height="142">
 										<rect id="left-rect-review-0" class="criteria-rect review-rect" width="160" height="26" x="1" y="6"></rect>
 										<rect class="criteria-rect" width="40" height="26" x="161" y="6"></rect>
@@ -199,6 +290,8 @@
 
 										<rect id="review-sel-area" class="criteria-rect selection-area" x="169" y="6" width="24" height="130"></rect>
 										<rect id="review-sel-area-agreed" class="criteria-rect selection-area" x="169" y="6" width="24"></rect>
+										<g id="review-members-sel" style="opacity: 0; transition: 0.2s">
+										</g>
 										<rect id='review-disagreed-border' class='disagreed-inner-border' x="2" y="6" height="130" style='opacity: 0'></rect>
 										<rect id="review-inner-border" class="agreed-inner-border" x="2" y="7" width="318"></rect>
 										<rect pointer-events="visible" id="review-slider-area" class="criteria-rect selection-area-border" x="161" y="6" width="40" height="130"></rect>
@@ -208,20 +301,24 @@
 								</div>
 								<div class='option-select'>
 									<input id='review-no-pref' type='checkbox' checked>
-									<span> I don't have preferences on this criterion </span>
+									<span> I'm okay with any number of reviews </span>
+								</div>
+								<div class='option-select'>
+									<input id='review-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
 								</div>
 							</div>
 							<div class="criteria">
 								<div>
+									<img class="collapse" src="img/CDQ_criterion_open@2x.png"/>
 									<span class="subject-label">
 										Cities / Neighborhood
 									</span>
-									<img class="collapse" src="img/CDQ_criterion_open@2x.png"/>
 								</div>
 								<div id='location-svg'></div>
 								<div class='option-select'>
 									<input type='checkbox'>
-									<span> I don't have preferences on this criterion </span>
+									<span> I'm okay with everything on this criterion </span>
 								</div>
 							</div>
 						</div>
@@ -229,10 +326,14 @@
 					--><div id="middle">
 						<h1 class='column-label'>Places</h1>
 						<div class='radio-options'>
-							<input type='radio' name='place-list' id='ego-radio' value='personal' checked>
-							<label for='ego-radio'>Show places matching my filter <b id='num-ego-cen'>(0 places)</b></label>
-							<input type='radio' name='place-list' id='archive-radio' value='archive'>
-							<label for='archive-radio'>Show places in group archive <b id='num-fav'>(0 places)</b></label>
+							<div style="width: 50%; display: inline-block">
+								<input type='radio' name='place-list' id='ego-radio' value='personal' checked>
+								<label for='ego-radio'>Places matching my filters: <b id='num-ego-cen'>0 places</b></label>
+							</div>
+							<div style="width: 49%; display: inline-block">
+								<input type='radio' name='place-list' id='archive-radio' value='archive'>
+								<label for='archive-radio'>Places in group bookmark: <b id='num-fav'>0 places</b></label>
+							</div>
 						</div>
 						<div class='column-content'>
 							<div id='places-container'>
@@ -252,7 +353,7 @@
 							<input type='radio' name='msgs-list' id='chat-radio' value='chat' checked>
 							<label for='chat-radio'>Show Chat</label>
 							<input type='radio' name='msgs-list' id='ping-radio' value='ping'>
-							<label for='ping-radio'>Show Pings</label>
+							<label for='ping-radio'>Show Pings <span id="ping-unanswered" style="color: red"></span></label>
 						</div>
 						<div class='column-content'>
 							<div id='chat-container'>
@@ -262,12 +363,20 @@
 								</div>
 							</div>
 							<div id='ping-container' hidden>
-								<div class='nothing-msg'> You have received no pings </div>
+								<span class="subject-label"> Pings you received </span>
+								<div id='received-pings' style="margin-bottom: 10px; border-bottom: solid 1px #D8D8D8">
+									<div class='nothing-msg'> You have received no pings </div>
+								</div>
+								<span class="subject-label" style="margin-top: 10px"> Pings you sent </span>
+								<div id='sent-pings'>
+									<div class='nothing-msg'> You have sent no pings </div>
+								</div>
 							</div>
 						</div>
 						<div>
 							<textarea rows='1' class='input-chat' placeholder='Message the group or mention a member (e.g. @JohnD)'></textarea>
 						</div>
+						<div class='bottom-tooltip'>You have received a ping from</div>
 					</div>
 				</div>
 				<div id='bot-bar'>

@@ -1,0 +1,15 @@
+/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Parser.js:80
+        throw err; // Rethrow non-MySQL errors
+        ^
+
+TypeError: Cannot read property 'map' of undefined
+    at Query._callback (/var/www/users/traffigram/come_together_server/ComeTogether/source/controllers/mainController.js:231:19)
+    at Query.Sequence.end (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Sequence.js:88:24)
+    at Query.ErrorPacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Query.js:90:8)
+    at Protocol._parsePacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Protocol.js:279:23)
+    at Parser.write (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Parser.js:76:12)
+    at Protocol.write (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Protocol.js:39:16)
+    at Socket.<anonymous> (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/Connection.js:103:28)
+    at emitOne (events.js:96:13)
+    at Socket.emit (events.js:188:7)
+    at readableAddChunk (_stream_readable.js:176:18)

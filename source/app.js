@@ -27,7 +27,7 @@ var sessionStore = new mysqlStore({
 // test mysql connection
 con.getConnection(function(err, connection){
 	if (err) throw err;
-	console.log("connected!");
+	//console.log("connected!");
 	connection.release();
 })
 
@@ -61,7 +61,7 @@ app.use(express.static(__dirname + '/../../../places/03_01_2018_Seattle/photos/'
 
 // start the server
 server.listen(8000);
-console.log('server up');
+//console.log('server up');
 
 // returns the current time as a string timestamp 'YYYY-MM-DD HH:MM:SS'
 function getTimestamp(){
