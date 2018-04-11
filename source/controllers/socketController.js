@@ -81,6 +81,50 @@ module.exports = function(server, con){
 			getPathAndQuery(sql, socket, con)
 		})
 
+		socket.on('city change', function(data){
+			socket.broadcast.to(socket.groupID).emit('city change', {id: socket.userID, cityId: data.cityId, change: data.change})
+			var sql;
+			if(data.change > 0)
+				sql = `UPDATE groups SET g_cdq=JSON_ARRAY_APPEND(g_cdq, 'xxxx.cities', ${con.escape(data.cityId)}) WHERE g_id=${con.escape(socket.groupID)}`
+			else
+				sql = `UPDATE groups SET g_cdq=JSON_REMOVE(g_cdq, 
+						TRIM(BOTH '"' FROM JSON_SEARCH(g_cdq, 'one', ${con.escape(data.cityId)}, NULL, 'xxxx.cities'))) 
+						WHERE g_id=${con.escape(socket.groupID)}`
+			getPathAndQuery(sql, socket, con)
+		})
+
+		socket.on('city change all', function(data){
+			socket.broadcast.to(socket.groupID).emit('city change all', {id: socket.userID, change: data.change})
+			var sql;
+			if(data.change > 0)
+				sql = `UPDATE groups SET g_cdq=JSON_SET(g_cdq, 'xxxx.cities_init', false, 'xxxx.cities', JSON_ARRAY()) WHERE g_id=${con.escape(socket.groupID)}`
+			else
+				sql = `UPDATE groups SET g_cdq=JSON_SET(g_cdq, 'xxxx.cities_init', true, 'xxxx.cities', JSON_ARRAY()) WHERE g_id=${con.escape(socket.groupID)}`
+			getPathAndQuery(sql, socket, con)
+		})
+
+		socket.on('datetime change', function(data){
+			socket.broadcast.to(socket.groupID).emit('datetime change', {id: socket.userID, datetimeId: data.datetimeId, change: data.change})
+			var sql;
+			if(data.change > 0)
+				sql = `UPDATE groups SET g_cdq=JSON_ARRAY_APPEND(g_cdq, 'xxxx.datetime', ${con.escape(data.datetimeId)}) WHERE g_id=${con.escape(socket.groupID)}`
+			else
+				sql = `UPDATE groups SET g_cdq=JSON_REMOVE(g_cdq, 
+						TRIM(BOTH '"' FROM JSON_SEARCH(g_cdq, 'one', ${con.escape(data.datetimeId)}, NULL, 'xxxx.datetime'))) 
+						WHERE g_id=${con.escape(socket.groupID)}`
+			getPathAndQuery(sql, socket, con)
+		})
+
+		socket.on('datetime change all', function(data){
+			socket.broadcast.to(socket.groupID).emit('datetime change all', {id: socket.userID, change: data.change})
+			var sql;
+			if(data.change > 0)
+				sql = `UPDATE groups SET g_cdq=JSON_SET(g_cdq, 'xxxx.datetime_init', false, 'xxxx.datetime', JSON_ARRAY()) WHERE g_id=${con.escape(socket.groupID)}`
+			else
+				sql = `UPDATE groups SET g_cdq=JSON_SET(g_cdq, 'xxxx.datetime_init', true, 'xxxx.datetime', JSON_ARRAY()) WHERE g_id=${con.escape(socket.groupID)}`
+			getPathAndQuery(sql, socket, con)
+		})
+
 		socket.on('new message', function(msg){
 			var sql = `UPDATE groups SET g_chat_log=JSON_ARRAY_APPEND(g_chat_log, '$.data', 
 						JSON_OBJECT('user_id', ${con.escape(socket.userID)}, 'timestamp', CURRENT_TIMESTAMP, 'txt', ${con.escape(msg)})) 
@@ -160,6 +204,17 @@ module.exports = function(server, con){
 							socket.broadcast.to(socket.groupID).emit('remove fav', placeID)
 					})
 				}
+			})
+		})
+
+		socket.on('add datetime', function(datetime){
+			var sql = `UPDATE groups SET g_datetimes=JSON_ARRAY_APPEND(g_datetimes, '$', ${con.escape(datetime)}) WHERE g_id=${con.escape(socket.groupID)} AND 
+					   JSON_CONTAINS(g_datetimes, ${con.escape(datetime)})=0`
+			con.query(sql, function(err, result){
+				if(err)
+					console.log(err)
+				else
+					io.in(socket.groupID).emit('add datetime', datetime)
 			})
 		})
 

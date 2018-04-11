@@ -1138,7 +1138,9 @@ a {
 }
 
 .place-detail-body{
-	margin: 0 20px;
+	margin: 0 5px 0 20px;
+	height: 460px;
+	overflow-y: scroll;
 }
 
 .place-detail-body h1{
@@ -1192,6 +1194,30 @@ a {
 #mapid{
 	height: 230px;
 }
+
+#input-datetime-section{
+	margin: 3px 0 6px 0;
+}
+
+#input-datetime-section input{
+	border: solid 1px #aaa;
+	border-bottom: solid 3px #aaa;
+	height: 26px;
+	font-size: 12px;
+	margin: 0;
+}
+
+
+#input-datetime-section #add-datetime{
+	color: white;
+	width: 25px;
+	margin: 0;
+	height: 28px;
+	vertical-align:middle;
+	font-size: 12px;
+	line-height: 32px;
+}
+
 
 ::-webkit-scrollbar {
     width: 8px;

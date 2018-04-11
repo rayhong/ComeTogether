@@ -9,7 +9,11 @@ $.ajax({
 	success: function (data){
 		// update UI at #canvas
 		var title = $("#input_title").val()
-		var date = $("#input_date").val()
+		var datetimeStr = []
+		for(var i = 0; i < datetimes.length; i++){
+			var entry = datetimes[i]
+			datetimeStr.push(`${entry.slice(0,4)}-${entry.slice(4,6)}-${entry.slice(6,8)} ${entry.slice(8,10)}:${entry.slice(10,12)}`)
+		}
 		var tods = {res: $("#check_res").is(":checked"), caf: $("#check_caf").is(":checked"), night: $("#check_night").is(":checked"),
 				   shop: $("#check_shop").is(":checked"), attr: $("#check_attr").is(":checked")}
 		$("#canvas").empty();
@@ -27,7 +31,7 @@ $.ajax({
 			$(".credit").css("top", (height_window - 40) + "px");
 
 			$("#event-title").text(title);
-			$("#event-date").text(date);
+			$("#event-date").text(datetimeStr.join(', '))
 			var todsStr = `${tods.res ? "Restaurants " : ""}${tods.caf ? "Cafes " : ""}${tods.shop ? "Shopping " : ""}${tods.night ? "Nightlife " : ""}${tods.attr ? "Attractions " : ""}`
 			console.log(todsStr)
 			$("#event-tods").text(todsStr.slice(0, todsStr.length -1).replace(/ /g, ", "));

@@ -3,12 +3,13 @@ $(document).ready(function(){
 
 	// new member enters the application
 	socket.on('new member', function(data){
-		var member = {top: false, price: false, rating: -1, reviews: false, id: data.id,
-					firstname: data.firstname, lastname: data.lastname, filename: data.filename}
+		var member = {top: false, price: false, rating: -1, reviews: false, cities: false, datetime: false,
+					id: data.id, firstname: data.firstname, lastname: data.lastname, filename: data.filename}
 
 		var index = groupSize;
 		members.push(member)
 		groupSize++
+		$('#add-datetime').width($('#add-datetime').width() + 30)
 		$('.bar-content').width(260 + (groupSize-1)*30 + 600 + 400)
 		$('#content-area').width(260 + (groupSize-1)*30 + 600 + 400)
 		$('#btn-area').width(240 + (groupSize-1)*30)
@@ -71,6 +72,36 @@ $(document).ready(function(){
 		$('#review-disagreed-border').attr('width', 198 + (groupSize-1)*30)
 		reviewAgreements[5]++
 		updateReviewAgreement(true, 0, 0)
+
+		$('#cities-svg').attr('width', 202 + (groupSize-1)*30)
+		$('#city-disagreed-border').attr('width',198 + (groupSize-1)*30)
+		$('#cities-svg #right-rect').attr('width', (groupSize-1)*30)
+		$('#cities-svg #inner-border').attr('width', (138 + (groupSize-1)*30))
+		$('#cities-svg #right-text').attr('x', (2*201 + (groupSize-1)*30)/2)
+		var citiesID = Object.keys(cityAgreements)
+		for(i = 0; i < citiesID.length - 1; i++){
+			var city = citiesID[i]
+			var html = `<rect class='criteria-rect' x='${201 + (index-1)*30}' y='${$('#city-group-' + city + ' > #right-rect').attr('y')}' width='30' height='26' style='fill:${colors[index]}'/>
+						<image id='${'ping-' + city + '-' + member.id}' class='test-ping' href='img/CDQ_ping.png' x='${201 + (index-1)*30 + 7}' y='${$('#city-group-' + city + ' > #right-rect').attr('y')/1 + 6}' style='opacity: 0'/>`
+			$('#city-group-' + city + ' > .city-members-sel').html($('#city-group-' + city + ' > .city-members-sel').html() + html)
+		}
+		cityAgreements.notCare++
+		updateCityAgreementAll(0, index)
+
+		$('#datetime-svg').attr('width', 202 + (groupSize-1)*30)
+		$('#datetime-disagreed-border').attr('width',198 + (groupSize-1)*30)
+		$('#datetime-svg #right-rect').attr('width', (groupSize-1)*30)
+		$('#datetime-svg #inner-border').attr('width', (138 + (groupSize-1)*30))
+		$('#datetime-svg #right-text').attr('x', (2*201 + (groupSize-1)*30)/2)
+		var datetimeID = Object.keys(datetimeAgreements)
+		for(i = 0; i < datetimeID.length - 1; i++){
+			var datetime = datetimeID[i]
+			var html = `<rect class='criteria-rect' x='${201 + (index-1)*30}' y='${$('#datetime-group-' + datetime + ' > #right-rect').attr('y')}' width='30' height='26' style='fill:${colors[index]}'/>
+						<image id='${'ping-' + datetime + '-' + member.id}' class='test-ping' href='img/CDQ_ping.png' x='${201 + (index-1)*30 + 7}' y='${$('#datetime-group-' + datetime + ' > #right-rect').attr('y')/1 + 6}' style='opacity: 0'/>`
+			$('#datetime-group-' + datetime + ' > .datetime-members-sel').html($('#datetime-group-' + datetime + ' > .datetime-members-sel').html() + html)
+		}
+		datetimeAgreements.notCare++
+		updateDatetimeAgreementAll(0, index)
 
 		changeMemberAgreement(member, true)
 	})
@@ -262,6 +293,145 @@ $(document).ready(function(){
 		changeMemberAgreement(members[memberIndex])
 	})
 
+	socket.on('city change', function(data){
+		var city = data.cityId
+		var memberIndex = members.findIndex(function(member){
+			return this.id === member.id
+		}, {id: data.id})
+		if(data.change > 0){
+			members[memberIndex].cities.push(city)
+			var pastAgreedNum = cityAgreements[city]
+			cityAgreements[city]++
+			if(cityAgreements[city] == (groupSize - cityAgreements.notCare))
+				cityAgreed++;
+			updateCityAgreement(city)
+			$('#city-group-' + city + ' > .city-members-sel rect:nth-child(' + (2*memberIndex-1) + ')').css('opacity', 1)
+			$('#city-group-' + city + ' > .city-members-sel image:nth-child(' + (2*memberIndex) + ')').css({'opacity': 0, 'cursor': 'auto'})
+			if(pastAgreedNum == 0 && !$('#city-show-categories').is(':checked')){
+				$('#city-group-' + city).css('opacity', 1)
+				var citiesID = Object.keys(cityAgreements)
+				var numSpaces = 0;
+				var index = citiesID.indexOf(city)
+				for(i = 0; i < index; i++){
+					if(cityAgreements[citiesID[i]] > 0)
+						numSpaces++;
+				}
+
+				var transform = numSpaces*26 - ($('#city-group-' + city + ' rect:first-child').attr('y') - 1)
+				$('#city-group-' + city).attr('transform', 'translate(0, ' + transform + ')')
+				for(i = index + 1; i < citiesID.length; i++){
+					if(cityAgreements[citiesID[i]] > 0){
+						if($('#city-group-' + citiesID[i]).attr('transform'))
+							$('#city-group-' + citiesID[i]).attr('transform', $('#city-group-' + citiesID[i]).attr('transform') + ' translate(0, ' + 26 + ')')
+						else
+							$('#city-group-' + citiesID[i]).attr('transform', 'translate(0, ' + 26 + ')')
+					}
+				}
+
+				$('#city-disagreed-border').attr('height', 26 + $('#city-disagreed-border').attr('height')/1)
+				$('#cities-svg').attr('height', 26 + $('#cities-svg').height()/1)
+			}
+		}else{
+			members[memberIndex].cities.splice(members[memberIndex].cities.indexOf(city), 1)
+			if(cityAgreements[city] == (groupSize - cityAgreements.notCare))
+				cityAgreed--
+			cityAgreements[city]--
+			updateCityAgreement(city)
+			$('#city-group-' + city + ' > .city-members-sel rect:nth-child(' + (2*memberIndex - 1) + ')').css('opacity', 0)
+			if(userCDQ.cities && userCDQ.cities.includes(city)){
+				$('#city-group-' + city + ' > .city-members-sel image:nth-child(' + (2*memberIndex) + ')').css('opacity', 1)
+				if($('#city-show-all').is(':checked'))
+					$('#city-group-' + city + ' > .city-members-sel image:nth-child(' + (2*memberIndex) + ')').css('cursor', 'pointer')
+			}	
+
+			if(cityAgreements[city] == 0 && !$('#city-show-categories').is(':checked'))
+				clearDisagreedCity();
+		}
+		changeMemberAgreement(members[memberIndex])
+	})
+
+	socket.on('city change all', function(data){
+		var memberIndex = members.findIndex(function(member){
+			return this.id === member.id
+		}, {id: data.id})
+		var member = members[memberIndex]
+		updateCityAgreementAll(data.change, memberIndex)
+		if(data.change > 0)
+			members[memberIndex].cities = false;
+		else
+			members[memberIndex].cities = []
+		changeMemberAgreement(members[memberIndex])
+	})
+
+
+	socket.on('datetime change', function(data){
+		var datetime = data.datetimeId
+		var memberIndex = members.findIndex(function(member){
+			return this.id === member.id
+		}, {id: data.id})
+		if(data.change > 0){
+			members[memberIndex].datetime.push(datetime)
+			var pastAgreedNum = datetimeAgreements[datetime]
+			datetimeAgreements[datetime]++
+			if(datetimeAgreements[datetime] == (groupSize - datetimeAgreements.notCare))
+				datetimeAgreed++;
+			updateDatetimeAgreement(datetime)
+			$('#datetime-group-' + datetime + ' > .datetime-members-sel rect:nth-child(' + (2*memberIndex-1) + ')').css('opacity', 1)
+			$('#datetime-group-' + datetime + ' > .datetime-members-sel image:nth-child(' + (2*memberIndex) + ')').css({'opacity': 0, 'cursor': 'auto'})
+			if(pastAgreedNum == 0 && !$('#datetime-show-categories').is(':checked')){
+				$('#datetime-group-' + datetime).css('opacity', 1)
+				var datetimeID = Object.keys(datetimeAgreements)
+				var numSpaces = 0;
+				var index = datetimeID.indexOf(datetime)
+				for(i = 0; i < index; i++){
+					if(datetimeAgreements[datetimeID[i]] > 0)
+						numSpaces++;
+				}
+
+				var transform = numSpaces*26 - ($('#datetime-group-' + datetime + ' rect:first-child').attr('y') - 1)
+				$('#datetime-group-' + datetime).attr('transform', 'translate(0, ' + transform + ')')
+				for(i = index + 1; i < datetimeID.length; i++){
+					if(datetimeAgreements[datetimeID[i]] > 0){
+						if($('#datetime-group-' + datetimeID[i]).attr('transform'))
+							$('#datetime-group-' + datetimeID[i]).attr('transform', $('#datetime-group-' + datetimeID[i]).attr('transform') + ' translate(0, ' + 26 + ')')
+						else
+							$('#datetime-group-' + datetimeID[i]).attr('transform', 'translate(0, ' + 26 + ')')
+					}
+				}
+
+				$('#datetime-disagreed-border').attr('height', 26 + $('#datetime-disagreed-border').attr('height')/1)
+				$('#datetime-svg').attr('height', 26 + $('#datetime-svg').height()/1)
+			}
+		}else{
+			members[memberIndex].datetime.splice(members[memberIndex].datetime.indexOf(datetime), 1)
+			if(datetimeAgreements[datetime] == (groupSize - datetimeAgreements.notCare))
+				datetimeAgreed--
+			datetimeAgreements[datetime]--
+			updateDatetimeAgreement(datetime)
+			$('#datetime-group-' + datetime + ' > .datetime-members-sel rect:nth-child(' + (2*memberIndex - 1) + ')').css('opacity', 0)
+			if(userCDQ.datetime && userCDQ.datetime.includes(datetime)){
+				$('#datetime-group-' + datetime + ' > .datetime-members-sel image:nth-child(' + (2*memberIndex) + ')').css('opacity', 1)
+				if($('#datetime-show-all').is(':checked'))
+					$('#datetime-group-' + datetime + ' > .datetime-members-sel image:nth-child(' + (2*memberIndex) + ')').css('cursor', 'pointer')
+			}	
+
+			if(datetimeAgreements[datetime] == 0 && !$('#datetime-show-categories').is(':checked'))
+				clearDisagreedDatetime();
+		}
+	})
+
+	socket.on('datetime change all', function(data){
+		var memberIndex = members.findIndex(function(member){
+			return this.id === member.id
+		}, {id: data.id})
+		var member = members[memberIndex]
+		updateDatetimeAgreementAll(data.change, memberIndex)
+		if(data.change > 0)
+			members[memberIndex].datetime = false;
+		else
+			members[memberIndex].datetime = []
+	})
+
 	socket.on('new message', function(data){
 		var date = new Date()
 		var dateStr = getDate(date)
@@ -288,6 +458,7 @@ $(document).ready(function(){
 	// PINGS
 	socket.on('new ping', function(data){
 		if(userCDQ.id === data.receiverID){
+			console.log(data)
 			var senderIndex = members.findIndex(member => member.id === data.senderID)
 
 			var classStr = 'ping-' + data.category + '-'
@@ -307,6 +478,12 @@ $(document).ready(function(){
 					descriptionHtml += `<b>Over 1000</b> in your <b> Number of Reviews</b>`
 				else
 					descriptionHtml += `<b>${data.option}</b> in your <b> Number of Reviews</b>`
+			}else if(data.category === 'city'){
+				classStr += data.option
+				descriptionHtml += `<b>${getCityName(data.option)}</b> in your <b> Cities </b>`
+			}else if(data.category === 'datetime'){
+				classStr += data.option
+				descriptionHtml += `<b>${data.option.slice(0,4)}-${data.option.slice(4,6)}-${data.option.slice(6,8)} ${data.option.slice(8,10)}:${data.option.slice(10,12)}</b> in your <b>Date/Time</b>`
 			}
 
 			$('#received-pings').prepend(`<div class='ping-entry ${classStr}' data-sender='${data.senderID}'>
@@ -358,7 +535,8 @@ $(document).ready(function(){
 			var member = members[j]
 			var agree = (!member.top || member.top.includes(entry.top)) && (member.rating == -1 || member.rating <= entry.rating) && 
 						(!member.price || (member.price.min.length <= entry.price && entry.price <= member.price.max.length)) &&
-						(!member.reviews || member.reviews.min <= entry.reviews)
+						(!member.reviews || member.reviews.min <= entry.reviews) && 
+						(!member.cities || member.cities.includes(entry.city))
 			if(member.reviews && member.reviews.max != 1001)
 				agree = agree && (entry.reviews <= member.reviews.max)
 
@@ -495,5 +673,90 @@ $(document).ready(function(){
 				break;
 			}
 		}
+	})
+
+	socket.on('add datetime', function(datetime){
+		datetimesList.push(datetime)
+		var datetimeStr = `${datetime.slice(0,4)}-${datetime.slice(4,6)}-${datetime.slice(6,8)} ${datetime.slice(8,10)}:${datetime.slice(10,12)}`
+		var notCare = datetimeAgreements.notCare
+		delete datetimeAgreements.notCare
+		datetimeAgreements[datetime] = 0
+		datetimeAgreements.notCare = notCare
+		var i = datetimesList.length - 1
+		var svgHtml = ''
+		var noPref = $('#datetime-no-pref').is(':checked') ? 1 : 0
+		if($('#datetime-show-categories').is(':checked')){
+			if(datetimeAgreements.notCare != groupSize){
+				svgHtml = `<g id='datetime-group-${datetime}'>
+							<rect id='left-rect' class='criteria-rect' width='160' height='26' x='1' y='${i*26 + 1}'/>
+							<rect id='right-rect' class='criteria-rect agreement-rect' width='${(groupSize-1)*30}' height='26' x='201' y='${i*26 + 1}'/>
+							<rect id='inner-border' class='agreed-inner-border' width='${198 + (groupSize-1)*30}' height='24' x='2' y='${2 + i*26}' style='opacity: 0'/>
+							<text id='left-text' class='category-text' x='11' y='${i*26 + 18}'>${datetimeStr}</text>
+							<text id='right-text' class='agreement-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${i*26 + 18}' text-anchor='middle'>No ${groupSize > 2 ? '(' + (datetimeAgreements[datetime] + datetimeAgreements.notCare) + '/' + groupSize + ')' : ''} </text>
+							<g class='datetime-members-sel' style="opacity: 0; transition: 0.2s"></g>
+							<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${i*26 + 1}'/>
+							<image class="check-mark" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: 0'/>
+							<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: ${noPref}'/>
+							</g>`
+			}else{
+				datetimeAgreed++;
+				svgHtml = `<g id='datetime-group-${datetime}'>
+							<rect id='left-rect' class='criteria-rect agreed-rect' width='160' height='26' x='1' y='${i*26 + 1}'/>
+							<rect id='right-rect'class='criteria-rect agreement-rect agreed-rect' width='${(groupSize-1)*30}' height='26' x='201' y='${i*26 + 1}'/>
+							<rect id='inner-border' class='agreed-inner-border' width='${198 + (groupSize-1)*30}' height='24' x='2' y='${i*26 + 2}'/>
+							<text id='left-text' class='agreed-text' x='11' y='${i*26 + 18}'>${datetimeStr}</text>
+							<text id='right-text' class='agreed-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${i*26 + 18}' text-anchor='middle'>Yes!</text>
+							<g class='datetime-members-sel' style="opacity: 0; transition: 0.2s"></g>
+							<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${i*26 + 1}'/>
+							<image class="check-mark" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: 0'/>
+							<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: ${noPref}'/>
+							</g>`
+			}
+			$('#datetime-svg').height($('#datetime-svg').height() + 26)
+			$('#datetime-disagreed-border').height($('#datetime-disagreed-border').height() + 26)
+		}else{
+			if(datetimeAgreements.notCare == groupSize){
+				datetimeAgreed++;
+				svgHtml = `<g id='datetime-group-${datetime}' style='opacity: 0'>
+							<rect id='left-rect' class='criteria-rect agreed-rect' width='160' height='26' x='1' y='${i*26 + 1}'/>
+							<rect id='right-rect'class='criteria-rect agreement-rect agreed-rect' width='${(groupSize-1)*30}' height='26' x='201' y='${i*26 + 1}'/>
+							<rect id='inner-border' class='agreed-inner-border' width='${198 + (groupSize-1)*30}' height='24' x='2' y='${i*26 + 2}'/>
+							<text id='left-text' class='agreed-text' x='11' y='${i*26 + 18}'>${datetimeStr}</text>
+							<text id='right-text' class='agreed-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${i*26 + 18}' text-anchor='middle'>Yes!</text>
+							<g class='datetime-members-sel' style="opacity: 0; transition: 0.2s"></g>
+							<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${i*26 + 1}'/>
+							<image class="check-mark" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: 0'/>
+							<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: ${noPref}'/>
+							</g>`
+			}else{		
+				svgHtml = `<g id='datetime-group-${datetime}' style='opacity: 0'>
+							<rect id='left-rect' class='criteria-rect' width='160' height='26' x='1' y='${i*26 + 1}'/>
+							<rect id='right-rect' class='criteria-rect agreement-rect' width='${(groupSize-1)*30}' height='26' x='201' y='${i*26 + 1}'/>
+							<rect id='inner-border' class='agreed-inner-border' width='${198 + (groupSize-1)*30}' height='24' x='2' y='${i*26 + 2}' style='opacity: 0'/>
+							<text id='left-text' class='category-text' x='11' y='${i*26 + 18}'>${datetimeStr}</text>
+							<text id='right-text' class='agreement-text' x='${(2*201 + (groupSize-1)*30)/2}' y='${i*26 + 18}' text-anchor='middle'>No ${groupSize > 2 ? '(' + (datetimeAgreements[datetime] + datetimeAgreements.notCare) + '/' + groupSize + ')' : ''} </text>
+							<g class='datetime-members-sel' style="opacity: 0; transition: 0.2s"></g>
+							<rect class='criteria-rect check-box' width='40' height='26' x='161' y='${i*26 + 1}'/>
+							<image class="check-mark" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: 0'/>
+							<image class="check-nopref" href="img/CDQ_check.png" x='172' y='${i*26 + 7}' height='13px' width='19px' style='opacity: ${noPref}'/>
+							</g>`
+			}
+		}
+		$('.datetime-options').html($('.datetime-options').html() + svgHtml)
+		setDatetimeCheckboxHandler()
+		var userSelected = userCDQ.datetime && userCDQ.datetime.includes(datetime)
+		var groupHtml = ''
+		for(k = 1; k < members.length; k++){
+			var member = members[k]
+			var isSelected = member.datetime === false || member.datetime.indexOf(datetime) != -1
+			groupHtml += `<rect class='criteria-rect' x='${201 + (k-1)*30}' y='${$('#datetime-group-' + datetime + ' > #right-rect').attr('y')}' width='30' height='26' 
+								style='fill:${colors[k]}; ${isSelected ? '' : 'opacity: 0'}'/>
+						  <image id='ping-datetime-${datetime}-${member.id}' class='test-ping' href='img/CDQ_ping.png'
+						  		 x='${201 + (k-1)*30 + 7}' y='${$('#datetime-group-' + datetime + ' > #right-rect').attr('y')/1 + 6}'
+						  		 width='14px' height='14px'
+						 		 style='${(isSelected || !userSelected) ? 'opacity: 0' : ''}'/>`
+		}
+		$('#datetime-group-' + datetime + ' > .datetime-members-sel').html(groupHtml)
+		setPingHandlers()
 	})
 })

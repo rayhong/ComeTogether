@@ -176,7 +176,8 @@ module.exports = function(app, con){
 		// if group creation in progress, edit the group
 		// else create the group
 		if(req.session.g_id){
-			var sql = `UPDATE groups SET g_title=${con.escape(data.title)}, g_date=${con.escape(data.date)}, 
+			var datetimesStr = data.datetimes.map(str => con.escape(str)).join(', ')
+			var sql = `UPDATE groups SET g_title=${con.escape(data.title)}, g_datetimes=JSON_ARRAY(${datetimesStr}), 
 					   g_types=JSON_OBJECT('restaurants', ${data.type.res}, 'cafe', ${data.type.caf}, 'attractions', ${data.type.attr}, 'shopping', ${data.type.shop}, 'nightlife', ${data.type.night}) 
 					   WHERE g_id=${con.escape(req.session.g_id)}`
 			con.query(sql, function(err, result){
@@ -187,8 +188,9 @@ module.exports = function(app, con){
 			})
 		}else{
 			var id = Math.random().toString(36).substring(2, 12).toUpperCase()
-			var sql = `INSERT INTO groups (g_id, g_title, g_date, g_types, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log) VALUES(
-					   ${con.escape(id)}, ${con.escape(data.title)}, ${con.escape(data.date)}, 
+			var datetimesStr = data.datetimes.map(str => con.escape(str)).join(', ')
+			var sql = `INSERT INTO groups (g_id, g_title, g_types, g_status, g_cdq, g_fav, g_chat_log, g_ping_log, g_activities_log, g_datetimes) VALUES(
+					   ${con.escape(id)}, ${con.escape(data.title)}, 
 					   JSON_OBJECT('res', ${data.type.res}, 'caf', ${data.type.caf}, 'attr', ${data.type.attr}, 'shop', ${data.type.shop}, 'night', ${data.type.night}), 
 					   JSON_OBJECT('ongoing', true, 'creation_date', CURRENT_TIMESTAMP, 'terminated', false, 'invited_from', ${con.escape(req.session.userID)}, 'invited_to', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_cdq', 'g_id', null, 'data', JSON_ARRAY(
@@ -196,7 +198,8 @@ module.exports = function(app, con){
 					   'price', JSON_OBJECT('min', '$', 'max', '$$$$'), 'rating_init', false, 'rating', 0, 'reviews_init', false, 
 					   'reviews', JSON_OBJECT('min', 10, 'max', 100), 'cities_init', false, 'cities', JSON_ARRAY()))), JSON_OBJECT('type', 'g_fav', 'data', JSON_ARRAY()), 
 					   JSON_OBJECT('type', 'g_chat_log', 'data', JSON_ARRAY()), JSON_OBJECT('type', 'g_ping_log', 'g_id', null, 'data', JSON_ARRAY()), 
-					   JSON_OBJECT('type', 'g_behavior_log', 'g_id', null, 'timestamp', JSON_OBJECT('initiated', ${Date.now()}, 'terminated', null), 'activities', JSON_ARRAY()))`
+					   JSON_OBJECT('type', 'g_behavior_log', 'g_id', null, 'timestamp', JSON_OBJECT('initiated', ${Date.now()}, 'terminated', null), 'activities', JSON_ARRAY()),
+					   JSON_ARRAY(${datetimesStr}))`
 			con.query(sql, function(err, result){
 				if(err){
 					console.log(err)

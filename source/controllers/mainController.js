@@ -42,7 +42,7 @@ module.exports = function(app, con){
 	});
 
 	app.get('/get_group_cdqs', function(req, res){
-		var sql = `SELECT g_title, g_cdq, g_status, g_types FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
+		var sql = `SELECT g_title, g_cdq, g_status, g_types, g_datetimes FROM groups WHERE g_id=${con.escape(req.session.groupID)}`;
 
 		con.query(sql, function(err, result){
 			if(err){
@@ -52,6 +52,7 @@ module.exports = function(app, con){
 				var title = result[0].g_title
 				var status = JSON.parse(result[0].g_status)
 				var types = JSON.parse(result[0].g_types)
+				var datetimesList = JSON.parse(result[0].g_datetimes)
 				var cdqData = JSON.parse(result[0].g_cdq).data;
 				var invitedToList = status.invited_to;
 				var idList = "(" + con.escape(status.invited_from);
@@ -71,7 +72,7 @@ module.exports = function(app, con){
 
 					var alreadyAdded = false
 					var group = []
-					var user = {top: false, price: false, rating: -1, reviews: false, id: req.session.userID,
+					var user = {top: false, price: false, rating: -1, reviews: false, cities: false, datetime: false, id: req.session.userID,
 								firstname: members[req.session.userID].firstname, lastname: members[req.session.userID].lastname,
 								filename: members[req.session.userID].filename,}
 					for(i = 0; i < cdqData.length; i++){
@@ -87,8 +88,12 @@ module.exports = function(app, con){
 								user.rating = cdqEntry.rating
 							if(cdqEntry.reviews_init)
 								user.reviews = cdqEntry.reviews
+							if(cdqEntry.cities_init)
+								user.cities = cdqEntry.cities
+							if(cdqEntry.datetime_init)
+								user.datetime = cdqEntry.datetime
 						}else{
-							var temp = {top: false, price: false, rating: -1, reviews: false}
+							var temp = {top: false, price: false, rating: -1, reviews: false, cities: false, datetime: false}
 							if(cdqEntry.top_init)
 								temp.top = cdqEntry.top
 							if(cdqEntry.price_init)
@@ -97,6 +102,10 @@ module.exports = function(app, con){
 								temp.rating = cdqEntry.rating
 							if(cdqEntry.reviews_init)
 								temp.reviews = cdqEntry.reviews
+							if(cdqEntry.cities_init)
+								temp.cities = cdqEntry.cities
+							if(cdqEntry.datetime_init)
+								temp.datetime = cdqEntry.datetime
 							temp.id = cdqEntry.user_id
 							temp.firstname = members[cdqEntry.user_id].firstname
 							temp.lastname = members[cdqEntry.user_id].lastname
@@ -108,18 +117,18 @@ module.exports = function(app, con){
 						var addSql = `UPDATE groups SET g_cdq=JSON_ARRAY_APPEND(g_cdq, '$.data', JSON_OBJECT('user_id', ${con.escape(req.session.userID)}, 
 												'top_init', false, 'top', JSON_ARRAY(), 'price_init', false, 'price', JSON_OBJECT('min', '$', 'max', '$$$$'),
 												'rating_init', false, 'rating', 0, 'reviews_init', false, 'reviews', JSON_OBJECT('min', 10, 'max', 100), 
-												'cities_init', false, 'cities', JSON_ARRAY())) 
+												'cities_init', false, 'cities', JSON_ARRAY(), 'datetime_init', false, 'datetime', JSON_ARRAY())) 
 									   WHERE g_id=${con.escape(req.session.groupID)}`
 						con.query(addSql, function(err, result){
 							if(err){
 								console.log(err)
 								res.send({})
 							}else{
-								res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: true, types: types});
+								res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: true, types: types, datetimesList: datetimesList});
 							}
 						})
 					}else
-						res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: false, types: types});
+						res.send({id: {user: req.session.userID, group: req.session.groupID, title: title}, user: user, group: group, new: false, types: types, datetimesList: datetimesList});
 				})
 			}
 		})
@@ -150,7 +159,7 @@ module.exports = function(app, con){
 
 	app.post('/get_places', function(req, res){
 		var data = req.body
-		var sql = `SELECT p_top, p_data FROM places WHERE `
+		var sql = `SELECT p_top, p_cid, p_data FROM places WHERE `
 		if(data.topList){
 			var strList = '(' + con.escape(data.topList[0])
 			for(i = 1; i < data.topList.length; i++){
@@ -166,6 +175,15 @@ module.exports = function(app, con){
 		if(data.reviews.max != 1001)
 			sql +=  ` AND CAST(p_data->'$.data.yelp.review_cnt' AS decimal) <= ${con.escape(data.reviews.max)}`
 
+		if(data.cities){
+			var strList = '(' + con.escape(data.cities[0])
+			for(i = 1; i < data.topList.length; i++){
+				strList += ', ' + con.escape(data.cities[i])
+			}
+			strList += ')'
+			sql += ` AND p_cid IN ${strList}`
+		}
+
 		con.query(sql, function(err,result){
 			if(err){
 				console.log(err);
@@ -175,7 +193,8 @@ module.exports = function(app, con){
 					var entryData = JSON.parse(entry.p_data).data
 					return {id: entryData.yelp.id, top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
 							rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images, 
-							lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone}
+							lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone, city: entry.p_cid,
+							reviewInfo: entryData.google.reviews, open_hours: entryData.google.open_hours}
 				})
 				res.send(placesList)
 			}
@@ -198,7 +217,7 @@ module.exports = function(app, con){
 					idToUserMap[favs[i].fav_place_id] = favs[i].fav_user_id
 				}
 				if(placeIDs !== ''){
-					sql = `SELECT id, p_top, p_data FROM places WHERE id IN (${placeIDs})`
+					sql = `SELECT id, p_top, p_cid, p_data FROM places WHERE id IN (${placeIDs})`
 					con.query(sql, function(err, result){
 						if(err){
 							console.log(err);
@@ -208,7 +227,7 @@ module.exports = function(app, con){
 								var entryData = JSON.parse(entry.p_data).data
 								return {id: entryData.yelp.id, user: idToUserMap[entry.id], top: entry.p_top, name: entryData.yelp.name, price: entryData.google.price, 
 										rating: entryData.yelp.rating, reviews: entryData.yelp.review_cnt, address: entryData.yelp.address, photo: entryData.google.images,
-										lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone}
+										lat: entryData.yelp.coord_lat, lng: entryData.yelp.coord_lng, phone: entryData.yelp.phone, city: entry.p_cid}
 							})
 							res.send(placesList)
 						}

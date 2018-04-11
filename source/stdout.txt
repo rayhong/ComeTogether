@@ -1,4 +1,4 @@
-{ Error: ER_PARSE_ERROR: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near 's by farestart%' LIMIT 10' at line 1
+{ Error: ER_LOCK_DEADLOCK: Deadlock found when trying to get lock; try restarting transaction
     at Query.Sequence._packetToError (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Sequence.js:52:14)
     at Query.ErrorPacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/sequences/Query.js:77:18)
     at Protocol._parsePacket (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/protocol/Protocol.js:279:23)
@@ -9,20 +9,19 @@
     at Socket.emit (events.js:188:7)
     at readableAddChunk (_stream_readable.js:176:18)
     at Socket.Readable.push (_stream_readable.js:134:10)
+    at Pipe.onread (net.js:548:20)
     --------------------
     at Pool.query (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/mysql/lib/Pool.js:199:23)
-    at /var/www/users/traffigram/come_together_server/ComeTogether/source/controllers/mainController.js:229:7
-    at Layer.handle [as handle_request] (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/layer.js:95:5)
-    at next (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/route.js:137:13)
-    at Route.dispatch (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/route.js:112:3)
-    at Layer.handle [as handle_request] (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/layer.js:95:5)
-    at /var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:281:22
-    at Function.process_params (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:335:12)
-    at next (/var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express/lib/router/index.js:275:10)
-    at /var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/express-session/index.js:489:7
-  code: 'ER_PARSE_ERROR',
-  errno: 1064,
-  sqlMessage: 'You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version for the right syntax to use near \'s by farestart%\' LIMIT 10\' at line 1',
-  sqlState: '42000',
+    at insertAndSendPing (/var/www/users/traffigram/come_together_server/ComeTogether/source/controllers/socketController.js:241:6)
+    at Socket.<anonymous> (/var/www/users/traffigram/come_together_server/ComeTogether/source/controllers/socketController.js:128:6)
+    at emitOne (events.js:96:13)
+    at Socket.emit (events.js:188:7)
+    at /var/www/users/traffigram/come_together_server/ComeTogether/source/node_modules/socket.io/lib/socket.js:513:12
+    at _combinedTickCallback (internal/process/next_tick.js:67:7)
+    at process._tickCallback (internal/process/next_tick.js:98:9)
+  code: 'ER_LOCK_DEADLOCK',
+  errno: 1213,
+  sqlMessage: 'Deadlock found when trying to get lock; try restarting transaction',
+  sqlState: '40001',
   index: 0,
-  sql: 'SELECT DISTINCT p_data->\'$.data.yelp.name\' FROM places WHERE LOWER(p_data->\'$.data.yelp.name\') LIKE \'%maslow\'s by farestart%\' LIMIT 10' }
+  sql: 'INSERT INTO pings (ping_g_id, ping_from_id, ping_to_id, ping_notified, ping_cdq_action) SELECT \n\t\t\t   \'INYZY66DBV\', \'miasuh@uw.edu\', \'zachry@uw.edu\', false, \n\t\t\t   JSON_OBJECT(\'review\', 0) WHERE NOT EXISTS \n\t\t\t   (SELECT id FROM pings WHERE ping_g_id=\'INYZY66DBV\' AND ping_from_id=\'miasuh@uw.edu\' \n\t\t\t   AND ping_to_id=\'zachry@uw.edu\' AND ping_cdq_action->\'$.review\'=0 AND\n\t\t\t   ping_accepted IS NULL)' }

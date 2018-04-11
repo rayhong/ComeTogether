@@ -215,6 +215,12 @@ function acceptPing(category, option){
 			target = $('#review-bot-handle')
 
 		changeReviewDisplay(target, newPosition)
+	}else if(category === 'city'){
+		if(!userCDQ.cities.includes(option))
+			$('#city-group-' + option + ' .check-box').trigger('click')
+	}else if(category === 'datetime'){
+		if(!userCDQ.datetime.includes(option))
+			$('#datetime-group-' + option + ' .check-box').trigger('click')
 	}
 
 	$('.ping-' + category + '-' + option).remove(); 

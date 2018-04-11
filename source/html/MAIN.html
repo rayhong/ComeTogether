@@ -40,7 +40,7 @@
 						<div style='display: inline-block;  width: 50%'>
 							<h1 id='place-detail-name'> LOCATION NAME </h1>
 						</div><!--
-						--><div style='display: inline-block; width: 50%; text-align: right'>
+						--><div style='display: inline-block; width: 48%; text-align: right'>
 							<img id='close-detail' src='img/DETAIL_close.png' style='cursor: pointer'>
 						</div>
 						<div>
@@ -89,7 +89,7 @@
 							<div class='category-info'>
 								<span>REVIEW</span>
 							</div>
-							<div style='margin-top: 5px'>
+							<div id='place-detail-review-text' style='margin-top: 5px'>
 								"Blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah
 								blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah blah" by <b> Blah </b> on <b>26/02/2017</b>
 							</div>
@@ -98,7 +98,7 @@
 							<div class='category-info'>
 								<span> HOURS </span>
 							</div>
-							<div style='margin-top: 5px'>
+							<div id='place-detail-hours' style='margin-top: 5px'>
 								MON, TUE, WED, THUR, FRI, SAT, SUN
 							</div>
 						</div>
@@ -310,15 +310,49 @@
 							</div>
 							<div class="criteria">
 								<div>
-									<img class="collapse" src="img/CDQ_criterion_open@2x.png"/>
+									<img id='collapse-cities' class="collapse" src="img/CDQ_criterion_close@2x.png"/>
 									<span class="subject-label">
-										Cities / Neighborhood
+										Cities
 									</span>
 								</div>
-								<div id='location-svg'></div>
+								<div id='cities-svg-container'></div>
 								<div class='option-select'>
-									<input type='checkbox'>
+									<input id="city-no-pref" type='checkbox' checked>
 									<span> I'm okay with everything on this criterion </span>
+								</div>
+								<div class='option-select'>
+									<input id='city-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
+								</div>
+								<div class='option-select'>
+									<input id='city-show-categories' type='checkbox'>
+									<span> Show every category </span>
+								</div>
+							</div>
+							<div class="criteria">
+								<div>
+									<img id='collapse-datetime' class="collapse" src="img/CDQ_criterion_close@2x.png"/>
+									<span class="subject-label">
+										Date/Time
+									</span>
+								</div>
+								<div id='datetime-svg-container'></div>
+								<div id='input-datetime-section'>
+									<span><input type="date" id="input-date" class="input_text" placeholder="Date" style="width:105px"/></span>
+									<span><input type="time" id="input-time" class="input_text" placeholder="Time" style="width:80px" step="1800"/></span>
+									<span id="add-datetime" class="btn_dis">+ Add</span>
+								</div>
+								<div class='option-select'>
+									<input id="datetime-no-pref" type='checkbox' checked>
+									<span> I'm okay with everything on this criterion </span>
+								</div>
+								<div class='option-select'>
+									<input id='datetime-show-all' type='checkbox'>
+									<span> Show everyone's preference </span>
+								</div>
+								<div class='option-select'>
+									<input id='datetime-show-categories' type='checkbox'>
+									<span> Show every category </span>
 								</div>
 							</div>
 						</div>

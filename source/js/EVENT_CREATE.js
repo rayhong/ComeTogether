@@ -1,5 +1,6 @@
 // js for EVENT_CREATE.html
 // Present a EVENT_CREATE screen
+var datetimes
 
 $.ajax({
 	url: "html/EVENT_CREATE.html",
@@ -8,11 +9,12 @@ $.ajax({
 	success: function (data){
 		// get input data depending on previous page
 		var title = "";
-		var date = "";
 		var tods;
+		datetimes = []
+
 		if($("#SCR_EVENT_CREATE_READY").length){
 			title = $("#event-title").text()
-			date = $("#event-date").text()
+			datetimes = $("#event-date").text().split(", ")
 			tods = $("#event-tods").text().split(", ")
 		}else{
 			title = $("#event_title").val()
@@ -50,10 +52,26 @@ $.ajax({
 				$("#input_title").css("color", "#000");
 				$("#check_title").html("&#10004;");
 			}
-			if(date != ""){
-				$("#input_date").val(date);
-				$("#input_date").css("color", "#000");
-				$("#check_date").html("&#10004;");
+			if(datetimes.length != 0){
+				for(var i = 0; i < datetimes.length; i++){
+					var temp = datetimes[i].split(' ')
+					var date = temp[0]
+					var time = temp[1]
+					$('#added_datetimes').prepend(
+						`<span><input type="date" id="input_date-${i}" class="input_text" placeholder="Date" style="width:150px" value="${date}" readonly/></span>
+						 <span><input type="time" id="input_time-${i}" class="input_text" placeholder="Time" style="width:110px" step="1800" value="${time}" readonly/></span>
+						 <span id="remove_datetime-${i}" class="btn" style="width: 70px;margin: 0;height: 30px;vertical-align:middle;line-height: 32px;">x Remove</span>`)
+					$("#remove_datetime-" + i).click(function(){
+						var index = $(this).attr('id').split('-')[1]/1
+						$(this).remove()
+						$('#input_date-' + index).remove()
+						$('#input_time-' + index).remove()
+						datetimes.splice(index, 1)
+						verify_required()
+					})
+
+					datetimes[i] = formatDateTime(date, time)
+				}
 			}
 			if(tods){
 				for(i = 0; i < tods.length; i++){
@@ -86,13 +104,41 @@ $.ajax({
 			})
 
 			$("#input_date").change(function(){
-				verify_required();
+				verify_datetime()
+			})
+
+			$("#input_time").change(function(){
+				verify_datetime()
 			})
 
 			$(".check_tod").change(function(){
 				verify_required();
 			})
 
+			$("#add_datetime").click(function(){
+				if($(this).attr("class") == "btn"){
+					// todo check that datetime doesnt already exist
+					// change id based on index so change only the index of datetime
+					$('#added_datetimes').prepend(
+						`<span><input type="date" id="input_date-${datetimes.length}" class="input_text" placeholder="Date" style="width:150px" value="${$('#input_date').val()}" readonly/></span>
+						 <span><input type="time" id="input_time-${datetimes.length}" class="input_text" placeholder="Time" style="width:110px" step="1800" value="${$('#input_time').val()}" readonly/></span>
+						 <span id="remove_datetime-${datetimes.length}" class="btn" style="width: 70px;margin: 0;height: 30px;vertical-align:middle;line-height: 32px;">x Remove</span>`)
+					$("#remove_datetime-" + datetimes.length).click(function(){
+						var index = $(this).attr('id').split('-')[1]/1
+						$(this).remove()
+						$('#input_date-' + index).remove()
+						$('#input_time-' + index).remove()
+						datetimes.splice(index, 1)
+						verify_required()
+					})
+
+					datetimes.push(formatDateTime($('#input_date').val(), $("#input_time").val()))
+					$("#input_date").val("")
+					$("#input_time").val("")
+					$(this).attr("class", "btn_dis")
+					verify_required()
+				}
+			})
 
 			// creates group or edits depending on whether user previous actions
 			$(document).on("click", "#EVENT_CREATE_READY", function(){
@@ -135,8 +181,7 @@ function offEvents_event_create(){
 // and change register button if they are
 function verify_required(){
 	// checks if all necessary fields are filled or verified
-	if($("#input_title").val()!="" 
-		&& ($("#input_date").val()!="" && $("#input_date")[0].valueAsNumber/86400000 >= Math.floor(new Date()/86400000)) 
+	if($("#input_title").val()!="" && datetimes.length != 0
 		&& ($("#check_res").is(":checked") || $("#check_caf").is(":checked") || $("#check_attr").is(":checked") ||
 			$("#check_night").is(":checked") || $("#check_shop").is(":checked"))){
 		$("#EVENT_CREATE_READY").attr("class", "btn");
@@ -161,8 +206,16 @@ function verify_date(){
 	}
 }
 
+function verify_datetime(){
+	if($("#input_date").val()!="" && $("#input_date")[0].valueAsNumber/86400000 >= Math.floor(new Date()/86400000) &&
+	   $("#input_time").val()!="" && !datetimes.includes(formatDateTime($("#input_date").val(), $("#input_time").val())))
+		$("#add_datetime").attr("class", "btn");
+	else if($("#add_datetime").attr("class", "btn"))
+		$("#add_datetime").attr("class", "btn_dis")
+}
+
 function create_group(){
-	var data = {title: $("#input_title").val(), date: $("#input_date").val(), 
+	var data = {title: $("#input_title").val(), datetimes: datetimes,
 				type: {res: $("#check_res").is(":checked"), caf: $("#check_caf").is(":checked"), attr: $("#check_attr").is(":checked"),
 					   night: $("#check_night").is(":checked"), shop: $("#check_shop").is(":checked")}}
 	$.ajax({
@@ -193,4 +246,8 @@ function delete_group(){
 			loadScreen_event_create("DASHBOARD");
 		}
 	})
+}
+
+function formatDateTime(date, time){
+	return date.replace(/-/g, '') + time.replace(/:/g, '')
 }
